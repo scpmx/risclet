@@ -10,21 +10,7 @@ pub const CPUState = struct {
     Registers: [32]u32,
 };
 
-pub fn tick(cpuState: *CPUState, memory: *Memory) !void {
-
-    // Fetch Instruction
-    const raw: RawInstruction = try memory.read32(cpuState.ProgramCounter);
-
-    // Decode
-    const decodedInstruction = try instruction.decode(raw);
-
-    // Execute
-    try execute(decodedInstruction, cpuState, memory);
-
-    // Write Back
-}
-
-fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: *Memory) !void {
+pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: *Memory) !void {
     switch (decodedInstruction) {
         .RType => |inst| {
             switch (inst.funct3) {
@@ -71,8 +57,8 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
         .IType => |inst| {
             switch (inst.funct3) {
                 0b000 => { // JALR
-                    const regValue = cpuState.Registers[inst.rs1];
-                    cpuState.ProgramCounter = (regValue + inst.imm) & ~@as(u32, 1);
+                    // const rs1Value = cpuState.Registers[inst.rs1];
+                    // cpuState.ProgramCounter = (rs1Value + inst.imm) & ~@as(u32, 1);
                 },
                 0b001 => {},
                 0b010 => { // LW
@@ -82,14 +68,14 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
                     // - Accessing uninitialized or restricted memory regions
                     // - Immediate overflow or incorrect sign extension
                     if (inst.rd != 0) {
-                        const baseAddress = cpuState.Registers[inst.rs1];
-                        const address = baseAddress + inst.imm;
+                        const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                        const address = rs1Value + inst.imm;
 
                         if (address & 0b11 != 0) {
                             return error.MisalignedAddress;
                         }
 
-                        cpuState.Registers[inst.rd] = try memory.read32(address);
+                        cpuState.Registers[inst.rd] = try memory.read32(@intCast(address));
                     }
                 },
                 0b011 => {},
@@ -108,8 +94,9 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
                 0b000 => {},
                 0b001 => {},
                 0b010 => { // SW
-                    const baseAddress = cpuState.Registers[inst.rs1];
-                    _ = baseAddress;
+                    const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                    const rs2Value = cpuState.Registers[inst.rs2];
+                    try memory.write32(@intCast(rs1Value + inst.imm), rs2Value);
                 },
                 0b011 => {},
                 0b100 => {},
@@ -132,38 +119,67 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
     }
 }
 
-test "Decode and execute ADD" {
+test "Execute ADD" {
     const alloc = std.testing.allocator;
 
     var memory = try Memory.init(alloc, 4);
     defer memory.deinit(alloc);
-
-    try memory.write32(0x00000000, 0x002081b3); // ADD x3, x1, x2
 
     var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
 
     cpuState.Registers[1] = 1;
     cpuState.Registers[2] = 2;
 
-    try tick(&cpuState, &memory);
+    // ADD x3, x1, x2
+    const add: DecodedInstruction = .{ .RType = .{ .funct3 = 0x000, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+
+    try execute(add, &cpuState, &memory);
 
     try std.testing.expectEqual(3, cpuState.Registers[3]);
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
 
-test "Decode and execute LW" {
+test "Execute LW" {
     const alloc = std.testing.allocator;
 
     var memory = try Memory.init(alloc, 8);
     defer memory.deinit(alloc);
 
-    try memory.write32(0x00000000, 0x0040a103); // LW x2, 4(x1)
-    try memory.write32(0x00000004, 0x12345678);
+    try memory.write32(4, 0x12345678);
 
     var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
 
-    try tick(&cpuState, &memory);
+    // LW x2, 4(x1)
+    const lw: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = 4, .rd = 2, .rs1 = 1 } };
+
+    try execute(lw, &cpuState, &memory);
 
     try std.testing.expectEqual(0x12345678, cpuState.Registers[2]);
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SW" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 8);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    cpuState.Registers[2] = 0xDEADBEEF;
+
+    // SW x5, 4(x1)
+    const sw: DecodedInstruction = .{ .SType = .{
+        .funct3 = 0b010,
+        .rs1 = 1,
+        .imm = 4,
+        .rs2 = 2,
+    } };
+
+    try execute(sw, &cpuState, &memory);
+
+    const storedWord = try memory.read32(4);
+
+    try std.testing.expectEqual(0xDEADBEEF, storedWord);
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
