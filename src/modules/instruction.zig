@@ -14,106 +14,110 @@ pub const DecodedInstruction = union(enum) {
         rd: u5, // Bits [7:11]: Destination register.
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ADDI, ORI).
         rs1: u5, // Bits [15:19]: Source register.
-        imm: u12, // Bits [20:31]: Immediate value (sign-extended).
+        imm: i32, // Calculated immediate value (sign-extended).
     },
     SType: struct {
-        imm0: u5, // Bits [7:11]: Lower 5 bits of the immediate value (imm[4:0]).
-        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., SW for word store).
         rs1: u5, // Bits [15:19]: Base register for memory address.
         rs2: u5, // Bits [20:24]: Source register (data to store).
-        imm1: u7, // Bits [25:31]: Upper 7 bits of the immediate value (imm[11:5]).
+        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., SW for word store).
+        imm: i32, // Calculated immediate value (sign-extended).
     },
     BType: struct {
-        imm0: u4, // Bits [7:10]: Immediate bits [4:1] (used for offset calculation).
-        imm1: u1, // Bit [11]: Immediate bit [11].
-        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
         rs1: u5, // Bits [15:19]: First source register for comparison.
         rs2: u5, // Bits [20:24]: Second source register for comparison.
-        imm2: u6, // Bits [25:30]: Immediate bits [10:5] (used for offset calculation).
-        imm3: u1, // Bit [31]: Immediate bit [12] (most significant bit for offset).
+        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
+        imm: i32, // Calculated immediate value (sign-extended).
     },
     UType: struct {
         rd: u5, // Bits [7:11]: Destination register.
-        imm: u20, // Bits [12:31]: Upper immediate value (stored in the high 20 bits of the result).
+        imm: i32, // Upper immediate value (stored in the high 20 bits of the result, left-shifted by 12).
     },
     JType: struct {
         rd: u5, // Bits [7:11]: Destination register (holds the return address).
-        imm0: u8, // Bits [12:19]: Immediate bits [19:12] (offset for jump target).
-        imm1: u1, // Bit [20]: Immediate bit [11].
-        imm2: u10, // Bits [21:30]: Immediate bits [10:1] (offset for jump target).
-        imm3: u1, // Bit [31]: Immediate bit [20] (most significant bit for offset).
+        imm: i32, // Calculated immediate value (sign-extended).
     },
 };
 
 pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
     const opcodeBits = rawInstruction & 0b1111111;
+
     switch (opcodeBits) {
-        0b0110011 => {
+        0b0110011 => { // R-Type
             return DecodedInstruction{
                 .RType = .{
-                    .rd = @truncate((rawInstruction >> 7) & 0b11111), // Extract bits [7:11]
-                    .funct3 = @truncate((rawInstruction >> 12) & 0b111), // Extract bits [12:14]
-                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111), // Extract bits [15:19]
-                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111), // Extract bits [20:24]
-                    .funct7 = @truncate((rawInstruction >> 25) & 0b1111111), // Extract bits [25:31]
+                    .rd = @truncate((rawInstruction >> 7) & 0b11111),
+                    .funct3 = @truncate((rawInstruction >> 12) & 0b111),
+                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
+                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
+                    .funct7 = @truncate((rawInstruction >> 25) & 0b1111111),
                 },
             };
         },
-        0b0010011, 0b0000011 => {
+        0b0010011, 0b0000011 => { // I-Type
             return DecodedInstruction{
                 .IType = .{
-                    .rd = @truncate((rawInstruction >> 7) & 0b11111), // Extract bits [7:11]
-                    .funct3 = @truncate((rawInstruction >> 12) & 0b111), // Extract bits [12:14]
-                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111), // Extract bits [15:19]
-                    .imm = @truncate((rawInstruction >> 20) & 0b111111111111), // Extract bits [20:31]
+                    .rd = @truncate((rawInstruction >> 7) & 0b11111),
+                    .funct3 = @truncate((rawInstruction >> 12) & 0b111),
+                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
+                    .imm = signExtend((rawInstruction >> 20) & 0xFFF, 12),
                 },
             };
         },
-        0b0100011 => {
+        0b0100011 => { // S-Type
+            const imm0 = (rawInstruction >> 7) & 0b11111;
+            const imm1 = (rawInstruction >> 25) & 0b1111111;
             return DecodedInstruction{
                 .SType = .{
-                    .imm0 = @truncate((rawInstruction >> 7) & 0b11111), // Extract bits [7:11]
-                    .funct3 = @truncate((rawInstruction >> 12) & 0b111), // Extract bits [12:14]
-                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111), // Extract bits [15:19]
-                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111), // Extract bits [20:24]
-                    .imm1 = @truncate((rawInstruction >> 25) & 0b1111111), // Extract bits [25:31]
+                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
+                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
+                    .funct3 = @truncate((rawInstruction >> 12) & 0b111),
+                    .imm = signExtend((imm1 << 5) | imm0, 12),
                 },
             };
         },
-        0b1100011 => {
+        0b1100011 => { // B-Type
+            const imm0 = (rawInstruction >> 7) & 0b1111; // imm[4:1]
+            const imm1 = (rawInstruction >> 11) & 0b1; // imm[11]
+            const imm2 = (rawInstruction >> 25) & 0b111111; // imm[10:5]
+            const imm3 = (rawInstruction >> 31) & 0b1; // imm[12]
             return DecodedInstruction{
                 .BType = .{
-                    .imm0 = @truncate((rawInstruction >> 7) & 0b1111), // Extract imm[4:1] from bits [7:10]
-                    .imm1 = @truncate((rawInstruction >> 11) & 0b1), // Extract imm[11] from bit [11]
-                    .funct3 = @truncate((rawInstruction >> 12) & 0b111), // Extract funct3 from bits [12:14]
-                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111), // Extract rs1 from bits [15:19]
-                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111), // Extract rs2 from bits [20:24]
-                    .imm2 = @truncate((rawInstruction >> 25) & 0b111111), // Extract imm[10:5] from bits [25:30]
-                    .imm3 = @truncate((rawInstruction >> 31) & 0b1), // Extract imm[12] from bit [31]
+                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
+                    .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
+                    .funct3 = @truncate((rawInstruction >> 12) & 0b111),
+                    .imm = signExtend((imm3 << 12) | (imm2 << 5) | (imm1 << 11) | (imm0 << 1), 13),
                 },
             };
         },
-        0b0110111, 0b0010111 => {
+        0b0110111, 0b0010111 => { // U-Type
+            const imm: i32 = @bitCast(rawInstruction & 0xFFFFF000);
             return DecodedInstruction{
                 .UType = .{
-                    .rd = @truncate((rawInstruction >> 7) & 0b11111), // Extract rd from bits [7:11]
-                    .imm = @truncate((rawInstruction >> 12) & 0xFFFFF), // Extract imm[31:12] from bits [12:31]
+                    .rd = @truncate((rawInstruction >> 7) & 0b11111),
+                    .imm = imm >> 8,
                 },
             };
         },
-        0b1101111 => {
+        0b1101111 => { // J-Type
+            const imm0 = (rawInstruction >> 12) & 0b11111111; // imm[19:12]
+            const imm1 = (rawInstruction >> 20) & 0b1; // imm[11]
+            const imm2 = (rawInstruction >> 21) & 0b1111111111; // imm[10:1]
+            const imm3 = (rawInstruction >> 31) & 0b1; // imm[20]
             return DecodedInstruction{
                 .JType = .{
-                    .rd = @truncate((rawInstruction >> 7) & 0b11111), // Extract rd from bits [7:11]
-                    .imm0 = @truncate((rawInstruction >> 12) & 0b11111111), // Extract imm[19:12] from bits [12:19]
-                    .imm1 = @truncate((rawInstruction >> 20) & 0b1), // Extract imm[11] from bit [20]
-                    .imm2 = @truncate((rawInstruction >> 21) & 0b1111111111), // Extract imm[10:1] from bits [21:30]
-                    .imm3 = @truncate((rawInstruction >> 31) & 0b1), // Extract imm[20] from bit [31]
+                    .rd = @truncate((rawInstruction >> 7) & 0b11111),
+                    .imm = signExtend((imm3 << 20) | (imm0 << 12) | (imm1 << 11) | (imm2 << 1), 21),
                 },
             };
         },
         else => return error.UnknownOpcode,
     }
+}
+
+fn signExtend(value: u32, bits: u8) i32 {
+    const shift: u5 = @truncate(32 - bits);
+    const val: i32 = @bitCast(value);
+    return (val << shift) >> shift;
 }
 
 test "decode r-type instruction" {
@@ -141,7 +145,7 @@ test "decode i-type instruction" {
             try std.testing.expectEqual(5, i.rd);
             try std.testing.expectEqual(0, i.funct3);
             try std.testing.expectEqual(1, i.rs1);
-            try std.testing.expectEqual(4, i.imm);
+            try std.testing.expectEqual(4, i.imm); // Single calculated imm
         },
         else => try std.testing.expect(false),
     }
@@ -153,11 +157,10 @@ test "decode s-type instruction" {
 
     switch (instructionType) {
         .SType => |s| {
-            try std.testing.expectEqual(8, s.imm0);
-            try std.testing.expectEqual(2, s.funct3);
             try std.testing.expectEqual(1, s.rs1);
             try std.testing.expectEqual(5, s.rs2);
-            try std.testing.expectEqual(0, s.imm1);
+            try std.testing.expectEqual(2, s.funct3);
+            try std.testing.expectEqual(8, s.imm); // Single calculated imm
         },
         else => try std.testing.expect(false),
     }
@@ -169,13 +172,10 @@ test "decode b-type instruction" {
 
     switch (instructionType) {
         .BType => |b| {
-            try std.testing.expectEqual(8, b.imm0);
-            try std.testing.expectEqual(0, b.imm1);
-            try std.testing.expectEqual(1, b.funct3);
             try std.testing.expectEqual(1, b.rs1);
             try std.testing.expectEqual(2, b.rs2);
-            try std.testing.expectEqual(0, b.imm2);
-            try std.testing.expectEqual(0, b.imm3);
+            try std.testing.expectEqual(1, b.funct3);
+            try std.testing.expectEqual(16, b.imm);
         },
         else => try std.testing.expect(false),
     }
@@ -188,7 +188,7 @@ test "decode u-type instruction" {
     switch (instructionType) {
         .UType => |u| {
             try std.testing.expectEqual(1, u.rd);
-            try std.testing.expectEqual(0x30000, u.imm);
+            try std.testing.expectEqual(0x300000, u.imm);
         },
         else => try std.testing.expect(false),
     }
@@ -201,10 +201,7 @@ test "decode j-type instruction" {
     switch (instructionType) {
         .JType => |j| {
             try std.testing.expectEqual(1, j.rd);
-            try std.testing.expectEqual(0, j.imm0);
-            try std.testing.expectEqual(0, j.imm1);
-            try std.testing.expectEqual(4, j.imm2);
-            try std.testing.expectEqual(0, j.imm3);
+            try std.testing.expectEqual(8, j.imm);
         },
         else => try std.testing.expect(false),
     }
