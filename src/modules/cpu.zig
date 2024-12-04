@@ -71,20 +71,25 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
         .IType => |inst| {
             switch (inst.funct3) {
                 0b000 => { // JALR
-                    const rs1Value = cpuState.Registers[inst.rs1];
-                    cpuState.ProgramCounter = (rs1Value + inst.imm) & ~@as(u32, 1);
+                    const regValue = cpuState.Registers[inst.rs1];
+                    cpuState.ProgramCounter = (regValue + inst.imm) & ~@as(u32, 1);
                 },
                 0b001 => {},
                 0b010 => { // LW
+                    // TODO: Handle LW edge cases:
+                    // - Misaligned memory addresses (address not divisible by 4)
+                    // - Out-of-bounds memory access
+                    // - Accessing uninitialized or restricted memory regions
+                    // - Immediate overflow or incorrect sign extension
                     if (inst.rd != 0) {
-                        const rs1Value = cpuState.Registers[inst.rs1];
-                        const address = rs1Value + inst.imm;
+                        const baseAddress = cpuState.Registers[inst.rs1];
+                        const address = baseAddress + inst.imm;
 
                         if (address & 0b11 != 0) {
                             return error.MisalignedAddress;
                         }
 
-                        cpuState.Registers[inst.rd] = try memory.read32(rs1Value + inst.imm);
+                        cpuState.Registers[inst.rd] = try memory.read32(address);
                     }
                 },
                 0b011 => {},
@@ -99,7 +104,19 @@ fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: 
             }
         },
         .SType => |inst| {
-            std.debug.print("SType: {any}\n", .{inst});
+            switch (inst.funct3) {
+                0b000 => {},
+                0b001 => {},
+                0b010 => { // SW
+                    const baseAddress = cpuState.Registers[inst.rs1];
+                    _ = baseAddress;
+                },
+                0b011 => {},
+                0b100 => {},
+                0b101 => {},
+                0b110 => {},
+                0b111 => {},
+            }
             cpuState.ProgramCounter += 4;
         },
         .BType => |inst| {
