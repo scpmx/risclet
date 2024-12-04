@@ -123,17 +123,18 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpu: *CPUState, _: *Memor
                 0b000 => {
                     switch (inst.funct7) {
                         0b0000000 => {
-                            std.debug.print("Add", .{});
+                            std.debug.print("ADD", .{});
                             if (inst.rd != 0) {
                                 cpu.Registers[inst.rd] = cpu.Registers[inst.rs1] + cpu.Registers[inst.rs2];
                             }
                         },
                         0b0100000 => {
-                            std.debug.print("Sub", .{});
+                            std.debug.print("SUB", .{});
                             if (inst.rd != 0) {
                                 cpu.Registers[inst.rd] = cpu.Registers[inst.rs1] - cpu.Registers[inst.rs2];
                             }
                         },
+                        else => return error.UnknownFunct7,
                     }
                 },
                 0b001 => {
@@ -158,6 +159,21 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpu: *CPUState, _: *Memor
                     std.debug.print("AND", .{});
                 },
             }
+        },
+        .IType => |inst| {
+            std.debug.print("IType: {any}", .{inst});
+        },
+        .SType => |inst| {
+            std.debug.print("SType: {any}", .{inst});
+        },
+        .BType => |inst| {
+            std.debug.print("BType: {any}", .{inst});
+        },
+        .UType => |inst| {
+            std.debug.print("UType: {any}", .{inst});
+        },
+        .JType => |inst| {
+            std.debug.print("JType: {any}", .{inst});
         },
     }
 }
@@ -323,7 +339,7 @@ pub fn tick(cpu: *CPUState, memory: *Memory) !void {
     const decodedInstruction = try decode(instruction);
 
     // Execute
-    try execute(decodedInstruction);
+    try execute(decodedInstruction, cpu, memory);
 
     // Write Back
 }
