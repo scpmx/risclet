@@ -4,7 +4,78 @@ const RawInstruction = u32;
 
 const InstructionType = enum { RType, IType, SType, BType, UType, JType };
 
-const RTypeInstruction = packed struct { opcode: u7, rd: u5, funct3: u3, rs1: u5, rs2: u5, funct7: u7 };
+const RTypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the general operation class (e.g., arithmetic, logical).
+    rd: u5, // Bits [7:11]: Destination register.
+    funct3: u3, // Bits [12:14]: Broadly classifies the operation (e.g., addition/subtraction, AND/OR).
+    rs1: u5, // Bits [15:19]: First source register.
+    rs2: u5, // Bits [20:24]: Second source register.
+    funct7: u7, // Bits [25:31]: Provides additional specificity for the operation (e.g., ADD vs. SUB).
+};
+
+fn decodeRType(inst: RawInstruction) RTypeInstruction {
+    return RTypeInstruction{
+        .funct7 = @truncate((inst >> 25) & 0b1111111), // Extract bits [25:31]
+        .rs2 = @truncate((inst >> 20) & 0b11111), // Extract bits [20:24]
+        .rs1 = @truncate((inst >> 15) & 0b11111), // Extract bits [15:19]
+        .funct3 = @truncate((inst >> 12) & 0b111), // Extract bits [12:14]
+        .rd = @truncate((inst >> 7) & 0b11111), // Extract bits [7:11]
+        .opcode = @truncate(inst & 0b1111111), // Extract bits [0:6]
+    };
+}
+
+const ITypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the operation class (e.g., immediate arithmetic, loads).
+    rd: u5, // Bits [7:11]: Destination register.
+    funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ADDI, ORI).
+    rs1: u5, // Bits [15:19]: Source register.
+    imm: u12, // Bits [20:31]: Immediate value (sign-extended).
+};
+
+fn decodeIType(inst: RawInstruction) ITypeInstruction {
+    return ITypeInstruction{
+        .imm = @truncate((inst >> 20) & 0b111111111111), // Extract bits [20:31]
+        .rs1 = @truncate((inst >> 15) & 0b11111), // Extract bits [15:19]
+        .funct3 = @truncate((inst >> 12) & 0b111), // Extract bits [12:14]
+        .rd = @truncate((inst >> 7) & 0b11111), // Extract bits [7:11]
+        .opcode = @truncate(inst & 0b1111111), // Extract bits [0:6]
+    };
+}
+
+const STypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the operation class (e.g., store operations).
+    imm0: u5, // Bits [7:11]: Lower 5 bits of the immediate value (imm[4:0]).
+    funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., SW for word store).
+    rs1: u5, // Bits [15:19]: Base register for memory address.
+    rs2: u5, // Bits [20:24]: Source register (data to store).
+    imm1: u7, // Bits [25:31]: Upper 7 bits of the immediate value (imm[11:5]).
+};
+
+const BTypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the operation class (e.g., conditional branch).
+    imm0: u4, // Bits [7:10]: Immediate bits [4:1] (used for offset calculation).
+    imm1: u1, // Bit [11]: Immediate bit [11].
+    funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
+    rs1: u5, // Bits [15:19]: First source register for comparison.
+    rs2: u5, // Bits [20:24]: Second source register for comparison.
+    imm2: u6, // Bits [25:30]: Immediate bits [10:5] (used for offset calculation).
+    imm3: u1, // Bit [31]: Immediate bit [12] (most significant bit for offset).
+};
+
+const UTypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the operation class (e.g., LUI, AUIPC).
+    rd: u5, // Bits [7:11]: Destination register.
+    imm: u20, // Bits [12:31]: Upper immediate value (stored in the high 20 bits of the result).
+};
+
+const JTypeInstruction = packed struct {
+    opcode: u7, // Bits [0:6]: Specifies the operation class (e.g., JAL).
+    rd: u5, // Bits [7:11]: Destination register (holds the return address).
+    imm0: u8, // Bits [12:19]: Immediate bits [19:12] (offset for jump target).
+    imm1: u1, // Bit [20]: Immediate bit [11].
+    imm2: u10, // Bits [21:30]: Immediate bits [10:1] (offset for jump target).
+    imm3: u1, // Bit [31]: Immediate bit [20] (most significant bit for offset).
+};
 
 pub fn opcode(rawInstruction: RawInstruction) InstructionType {
     const opcodeBits = rawInstruction & 0b1111111;
@@ -38,17 +109,6 @@ pub fn opcode(rawInstruction: RawInstruction) InstructionType {
     }
 }
 
-fn decodeRType(inst: RawInstruction) RTypeInstruction {
-    return RTypeInstruction{
-        .funct7 = @truncate((inst >> 25) & 0b1111111), // Extract bits [25:31]
-        .rs2 = @truncate((inst >> 20) & 0b11111), // Extract bits [20:24]
-        .rs1 = @truncate((inst >> 15) & 0b11111), // Extract bits [15:19]
-        .funct3 = @truncate((inst >> 12) & 0b111), // Extract bits [12:14]
-        .rd = @truncate((inst >> 7) & 0b11111), // Extract bits [7:11]
-        .opcode = @truncate(inst & 0b1111111), // Extract bits [0:6]
-    };
-}
-
 test "decode r-type instruction" {
     const inst: RawInstruction = 0b00000000001000010000000110110011; // ADD x3, x1, x2
 
@@ -68,8 +128,14 @@ test "decode i-type instruction" {
     const inst: RawInstruction = 0b00000000010000001000001010010011; // ADDI x5, x1, 4
 
     const instructionType = opcode(inst);
-
     try std.testing.expectEqual(instructionType, InstructionType.IType);
+
+    const itypeinstruction: ITypeInstruction = decodeIType(inst);
+    try std.testing.expectEqual(0b0010011, itypeinstruction.opcode);
+    try std.testing.expectEqual(0b00101, itypeinstruction.rd);
+    try std.testing.expectEqual(0b000, itypeinstruction.funct3);
+    try std.testing.expectEqual(0b00001, itypeinstruction.rs1);
+    try std.testing.expectEqual(0b000000000100, itypeinstruction.imm);
 }
 
 test "decode s-type instruction" {
@@ -172,6 +238,44 @@ pub fn tick(state: *CPUState, memory: *Memory) !void {
     switch (itype) {
         InstructionType.RType => {
             const rTypeInstruction = decodeRType(instruction);
+
+            switch (rTypeInstruction.funct3) {
+                0b000 => {
+                    switch (rTypeInstruction.funct7) {
+                        0b0000000 => {
+                            std.log.debug("Add", .{});
+                            state.Registers[rTypeInstruction.rd] = state.Registers[rTypeInstruction.rs1] + state.Registers[rTypeInstruction.rs2];
+                            state.Registers[0] = 0; // Ensure x0 stays 0. This is probably faster than using an if to check rd but idk
+                        },
+                        0b0100000 => {
+                            std.log.debug("Sub", .{});
+                        },
+                        else => @panic("Not allowed!!!!!"),
+                    }
+                },
+                0b001 => {
+                    std.log.debug("SLL", .{});
+                },
+                0b010 => {
+                    std.log.debug("SLT", .{});
+                },
+                0b011 => {
+                    std.log.debug("SLTU", .{});
+                },
+                0b100 => {
+                    std.log.debug("XOR", .{});
+                },
+                0b101 => {
+                    std.log.debug("SLR/SLA", .{});
+                },
+                0b110 => {
+                    std.log.debug("OR", .{});
+                },
+                0b111 => {
+                    std.log.debug("AND", .{});
+                },
+            }
+
             std.log.debug("{any}", .{rTypeInstruction});
         },
         else => @panic("WTF"),
