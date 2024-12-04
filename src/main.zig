@@ -240,15 +240,15 @@ pub fn tick(state: *CPUState, memory: *Memory) !void {
             const rTypeInstruction = decodeRType(instruction);
 
             switch (rTypeInstruction.funct3) {
-                0b000 => {
+                0b000 => { // Add or subtract
                     switch (rTypeInstruction.funct7) {
                         0b0000000 => {
                             std.log.debug("Add", .{});
                             state.Registers[rTypeInstruction.rd] = state.Registers[rTypeInstruction.rs1] + state.Registers[rTypeInstruction.rs2];
-                            state.Registers[0] = 0; // Ensure x0 stays 0. This is probably faster than using an if to check rd but idk
                         },
                         0b0100000 => {
                             std.log.debug("Sub", .{});
+                            state.Registers[rTypeInstruction.rd] = state.Registers[rTypeInstruction.rs1] - state.Registers[rTypeInstruction.rs2];
                         },
                         else => @panic("Not allowed!!!!!"),
                     }
@@ -276,9 +276,29 @@ pub fn tick(state: *CPUState, memory: *Memory) !void {
                 },
             }
 
-            std.log.debug("{any}", .{rTypeInstruction});
+            state.Registers[0] = 0; // Ensure x0 stays 0. This is probably faster than using an if to check rd but idk
+            state.ProgramCounter += 4;
+            std.log.debug("Decoded RType", .{});
         },
-        else => @panic("WTF"),
+        InstructionType.IType => {
+            state.ProgramCounter += 4;
+            std.log.debug("Decoded IType", .{});
+        },
+        InstructionType.SType => {
+            state.ProgramCounter += 4;
+            std.log.debug("Decoded SType", .{});
+        },
+        InstructionType.BType => {
+            state.ProgramCounter += 4;
+            std.log.debug("Decoded BType", .{});
+        },
+        InstructionType.UType => {
+            state.ProgramCounter += 4;
+            std.log.debug("Decoded UType", .{});
+        },
+        InstructionType.JType => {
+            std.log.debug("Decoded JType", .{});
+        },
     }
 
     // Execute
@@ -293,12 +313,15 @@ pub fn main() !void {
     defer memory.deinit(allocator);
 
     try memory.write32(0x0000, 0b00000000001000010000000110110011);
+    try memory.write32(0x0004, 0b00000000001000010000000110110011);
 
     var cpuState: CPUState = .{ .ProgramCounter = 0x0000, .StackPointer = 0x0000, .Registers = [_]u32{0} ** 32 };
 
+    cpuState.Registers[2] = 9;
+
     try tick(&cpuState, &memory);
 
-    std.debug.print("PC: {}\n", .{cpuState.ProgramCounter});
+    std.debug.print("x3: {}\n", .{cpuState.Registers[3]});
 }
 
 test "write then read u8" {
