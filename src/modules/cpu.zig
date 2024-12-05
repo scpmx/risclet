@@ -131,7 +131,11 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             cpuState.ProgramCounter += 4;
         },
         .JType => |inst| {
-            std.debug.print("JType: {any}\n", .{inst});
+            // If rd = 0, the instruction is J. Otherwise, it's JAL
+            if (inst.rd != 0) {
+                cpuState.Registers[inst.rd] = cpuState.ProgramCounter + 4;
+            }
+            cpuState.ProgramCounter += @intCast(inst.imm);
         },
     }
 }
@@ -254,4 +258,38 @@ test "Execute BEQ - Operands Not Equal" {
     try execute(beq, &cpuState, &memory);
 
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute J" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 12, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    // J 12
+    const beq: DecodedInstruction = .{ .JType = .{ .rd = 0, .imm = 12 } };
+
+    try execute(beq, &cpuState, &memory);
+
+    try std.testing.expectEqual(24, cpuState.ProgramCounter);
+    try std.testing.expectEqual(0, cpuState.Registers[0]);
+}
+
+test "Execute JAL" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 12, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    // JAL x1, 12
+    const beq: DecodedInstruction = .{ .JType = .{ .rd = 1, .imm = 12 } };
+
+    try execute(beq, &cpuState, &memory);
+
+    try std.testing.expectEqual(24, cpuState.ProgramCounter);
+    try std.testing.expectEqual(16, cpuState.Registers[1]);
 }
