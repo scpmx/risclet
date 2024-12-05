@@ -4,17 +4,9 @@ const cpu = @import("./modules/cpu.zig");
 const ins = @import("./modules/instruction.zig");
 
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
-
-    // Fetch Instruction
     const raw: ins.RawInstruction = try memory.read32(cpuState.ProgramCounter);
-
-    // Decode
     const decodedInstruction = try ins.decode(raw);
-
-    // Execute
     try cpu.execute(decodedInstruction, cpuState, memory);
-
-    // Write Back
 }
 
 pub fn main() !void {

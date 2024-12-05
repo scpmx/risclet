@@ -56,9 +56,11 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         },
         .IType => |inst| {
             switch (inst.funct3) {
-                0b000 => { // JALR
-                    // const rs1Value = cpuState.Registers[inst.rs1];
-                    // cpuState.ProgramCounter = (rs1Value + inst.imm) & ~@as(u32, 1);
+                0b000 => { // ADDI
+                    if (inst.rd != 0) {
+                        const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                        cpuState.Registers[inst.rd] = @intCast(rs1Value + inst.imm);
+                    }
                 },
                 0b001 => {},
                 0b010 => { // LW
@@ -84,10 +86,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b110 => {},
                 0b111 => {},
             }
-
-            if (inst.funct3 != 0b000) {
-                cpuState.ProgramCounter += 4;
-            }
+            cpuState.ProgramCounter += 4;
         },
         .SType => |inst| {
             switch (inst.funct3) {
@@ -157,6 +156,26 @@ test "Execute ADD" {
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
 
+test "Execute ADDI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 4);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    cpuState.Registers[1] = 1;
+    cpuState.Registers[5] = 2;
+
+    // ADDI x5, x1, 10
+    const addi: DecodedInstruction = .{ .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 10 } };
+
+    try execute(addi, &cpuState, &memory);
+
+    try std.testing.expectEqual(11, cpuState.Registers[5]);
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
 test "Execute LW" {
     const alloc = std.testing.allocator;
 
@@ -202,7 +221,7 @@ test "Execute SW" {
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
 
-test "Execute BEQ" {
+test "Execute BEQ - Operands Equal" {
     const alloc = std.testing.allocator;
 
     var memory = try Memory.init(alloc, 16);
@@ -210,10 +229,29 @@ test "Execute BEQ" {
 
     var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
 
-    // BEQ x1, x2, 8
+    // BEQ x1, x2, 12
     const beq: DecodedInstruction = .{ .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 } };
 
     try execute(beq, &cpuState, &memory);
 
     try std.testing.expectEqual(12, cpuState.ProgramCounter);
+}
+
+test "Execute BEQ - Operands Not Equal" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    cpuState.Registers[1] = 1;
+    cpuState.Registers[2] = 2;
+
+    // BEQ x1, x2, 12
+    const beq: DecodedInstruction = .{ .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 } };
+
+    try execute(beq, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
