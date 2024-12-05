@@ -135,7 +135,8 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             if (inst.rd != 0) {
                 cpuState.Registers[inst.rd] = cpuState.ProgramCounter + 4;
             }
-            cpuState.ProgramCounter += @intCast(inst.imm);
+            const pcAsSigned: i32 = @bitCast(cpuState.ProgramCounter);
+            cpuState.ProgramCounter = @bitCast(pcAsSigned + inst.imm);
         },
     }
 }

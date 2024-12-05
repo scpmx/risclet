@@ -15,14 +15,20 @@ pub fn main() !void {
     var memory = try mem.Memory.init(allocator, 1024);
     defer memory.deinit(allocator);
 
-    try memory.write32(0x0000, 0b00000000001000010000000110110011);
-    try memory.write32(0x0004, 0b00000000001000010000000110110011);
+    try memory.write32(0, 0x00000013); // NOP
+    try memory.write32(4, 0x00000013); // NOP
+    try memory.write32(8, 0x00000013); // NOP
+    try memory.write32(12, 0x00000013); // NOP
+    try memory.write32(16, 0x00000013); // NOP
+    try memory.write32(20, 0x00000013); // NOP
+    try memory.write32(24, 0x00000013); // NOP
+    try memory.write32(28, 0x00000013); // NOP
+    try memory.write32(32, 0xfe1ff06f); // J -32
 
     var cpuState: cpu.CPUState = .{ .ProgramCounter = 0x0000, .StackPointer = 0x0000, .Registers = [_]u32{0} ** 32 };
 
-    cpuState.Registers[2] = 9;
-
-    try cpu.tick(&cpuState, &memory);
-
-    std.debug.print("x3: {}\n", .{cpuState.Registers[3]});
+    while (true) {
+        try tick(&cpuState, &memory);
+        std.debug.print("{any}\n", .{cpuState});
+    }
 }
