@@ -107,7 +107,25 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             cpuState.ProgramCounter += 4;
         },
         .BType => |inst| {
-            std.debug.print("BType: {any}\n", .{inst});
+            switch (inst.funct3) {
+                0b000 => { // BEQ
+                    const rs1Value = cpuState.Registers[inst.rs1];
+                    const rs2Value = cpuState.Registers[inst.rs2];
+
+                    if (rs1Value == rs2Value) {
+                        cpuState.ProgramCounter += @intCast(inst.imm);
+                    } else {
+                        cpuState.ProgramCounter += 4;
+                    }
+                },
+                0b001 => {},
+                0b010 => {},
+                0b011 => {},
+                0b100 => {},
+                0b101 => {},
+                0b110 => {},
+                0b111 => {},
+            }
         },
         .UType => |inst| {
             std.debug.print("UType: {any}\n", .{inst});
@@ -182,4 +200,20 @@ test "Execute SW" {
 
     try std.testing.expectEqual(0xDEADBEEF, storedWord);
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute BEQ" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+
+    // BEQ x1, x2, 8
+    const beq: DecodedInstruction = .{ .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 } };
+
+    try execute(beq, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter);
 }
