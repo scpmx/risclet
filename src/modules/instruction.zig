@@ -4,6 +4,7 @@ pub const RawInstruction = u32;
 
 pub const DecodedInstruction = union(enum) {
     RType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., arithmetic/logical).
         rd: u5, // Bits [7:11]: Destination register.
         funct3: u3, // Bits [12:14]: Broadly classifies the operation (e.g., addition/subtraction, AND/OR).
         rs1: u5, // Bits [15:19]: First source register.
@@ -11,41 +12,49 @@ pub const DecodedInstruction = union(enum) {
         funct7: u7, // Bits [25:31]: Provides additional specificity for the operation (e.g., ADD vs. SUB).
     },
     IType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., immediate arithmetic, loads).
         rd: u5, // Bits [7:11]: Destination register.
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ADDI, ORI).
         rs1: u5, // Bits [15:19]: Source register.
         imm: i32, // Calculated immediate value (sign-extended).
     },
     SType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., stores).
         rs1: u5, // Bits [15:19]: Base register for memory address.
         rs2: u5, // Bits [20:24]: Source register (data to store).
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., SW for word store).
         imm: i32, // Calculated immediate value (sign-extended).
     },
     BType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., branches).
         rs1: u5, // Bits [15:19]: First source register for comparison.
         rs2: u5, // Bits [20:24]: Second source register for comparison.
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
         imm: i32, // Calculated immediate value (sign-extended).
     },
     UType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., LUI, AUIPC).
         rd: u5, // Bits [7:11]: Destination register.
         imm: i32, // Upper immediate value (stored in the high 20 bits of the result, left-shifted by 12).
     },
     JType: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., jumps).
         rd: u5, // Bits [7:11]: Destination register (holds the return address).
         imm: i32, // Calculated immediate value (sign-extended).
     },
     System: struct {
-        imm: u5, // Bits [24:20]: Immediate
+        opcode: u7, // Bits [0:6]: Specifies the operation group (`1110011` for system instructions).
+        imm: u5, // Bits [24:20]: Immediate.
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ECALL, EBREAK).
     },
     Fence: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (`0001111` for FENCE).
         pred: u4, // Bits [27:24]: Preceding memory operations mask.
         succ: u4, // Bits [23:20]: Succeeding memory operations mask.
         funct3: u3, // Bits [12:14]: Always `0b000`.
     },
     FenceI: struct {
+        opcode: u7, // Bits [0:6]: Specifies the operation group (`0001111` for FENCE.I).
         funct3: u3, // Bits [12:14]: Always `0b001` for FENCE.I.
     },
 };
