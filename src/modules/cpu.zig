@@ -153,13 +153,11 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 cpuState.Registers[inst.rd] = try memory.read32(@intCast(address));
                             }
                         },
-                        0b011 => {},
                         0b100 => { // LBU
                         },
                         0b101 => { // LHU
                         },
-                        0b110 => {},
-                        0b111 => {},
+                        else => return error.UnknownFunct3,
                     }
                 },
                 else => return error.UnknownOpcode,
@@ -170,8 +168,10 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             switch (inst.opcode) {
                 0b0100011 => {
                     switch (inst.funct3) {
-                        0b000 => {},
-                        0b001 => {},
+                        0b000 => { // SB
+                        },
+                        0b001 => { // SH
+                        },
                         0b010 => { // SW
                             const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
                             const address: u32 = @intCast(rs1Value + inst.imm);
@@ -182,11 +182,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 try memory.write32(address, cpuState.Registers[inst.rs2]);
                             }
                         },
-                        0b011 => {},
-                        0b100 => {},
-                        0b101 => {},
-                        0b110 => {},
-                        0b111 => {},
+                        else => return error.UnknownFunct3,
                     }
                 },
                 else => return error.UnknownOpcode,
@@ -208,13 +204,17 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 cpuState.ProgramCounter += 4;
                             }
                         },
-                        0b001 => {},
-                        0b010 => {},
-                        0b011 => {},
-                        0b100 => {},
-                        0b101 => {},
-                        0b110 => {},
-                        0b111 => {},
+                        0b001 => { // BNE
+                        },
+                        0b100 => { // BLT
+                        },
+                        0b101 => { // BGE
+                        },
+                        0b110 => { // BLTU
+                        },
+                        0b111 => { // BGEU
+                        },
+                        else => return error.UnknownFunct3,
                     }
                 },
                 else => return error.UnknownOpcode,
@@ -222,8 +222,10 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         },
         .UType => |inst| {
             switch (inst.opcode) {
-                0b0110111 => {},
-                0b0010111 => {},
+                0b0110111 => { // LUI
+                },
+                0b0010111 => { // AUIPC
+                },
                 else => return error.UnknownOpcode,
             }
             cpuState.ProgramCounter += 4;
