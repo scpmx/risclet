@@ -66,6 +66,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
         0b0110011 => { // R-Type
             return DecodedInstruction{
                 .RType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rd = @truncate((rawInstruction >> 7) & 0b11111),
                     .funct3 = @truncate((rawInstruction >> 12) & 0b111),
                     .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
@@ -77,6 +78,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
         0b0010011, 0b0000011 => { // I-Type
             return DecodedInstruction{
                 .IType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rd = @truncate((rawInstruction >> 7) & 0b11111),
                     .funct3 = @truncate((rawInstruction >> 12) & 0b111),
                     .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
@@ -89,6 +91,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             const imm1 = (rawInstruction >> 25) & 0b1111111;
             return DecodedInstruction{
                 .SType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
                     .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
                     .funct3 = @truncate((rawInstruction >> 12) & 0b111),
@@ -103,6 +106,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             const imm3 = (rawInstruction >> 31) & 0b1; // imm[12]
             return DecodedInstruction{
                 .BType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
                     .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
                     .funct3 = @truncate((rawInstruction >> 12) & 0b111),
@@ -114,6 +118,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             const imm: i32 = @bitCast(rawInstruction & 0xFFFFF000);
             return DecodedInstruction{
                 .UType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rd = @truncate((rawInstruction >> 7) & 0b11111),
                     .imm = imm >> 8,
                 },
@@ -126,6 +131,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             const imm3 = (rawInstruction >> 31) & 0b1; // imm[20]
             return DecodedInstruction{
                 .JType = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .rd = @truncate((rawInstruction >> 7) & 0b11111),
                     .imm = signExtend((imm3 << 20) | (imm0 << 12) | (imm1 << 11) | (imm2 << 1), 21),
                 },
@@ -136,6 +142,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             const funct3: u3 = @truncate((rawInstruction >> 12) & 0b111); // Bits [14:12]
             return DecodedInstruction{
                 .System = .{
+                    .opcode = @truncate(rawInstruction & 0b1111111),
                     .imm = imm,
                     .funct3 = funct3,
                 },
@@ -148,12 +155,12 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                     const pred: u4 = @truncate((rawInstruction >> 24) & 0b1111); // Bits [27:24]
                     const succ: u4 = @truncate((rawInstruction >> 20) & 0b1111); // Bits [23:20]
                     return DecodedInstruction{
-                        .Fence = .{ .pred = pred, .succ = succ, .funct3 = funct3 },
+                        .Fence = .{ .opcode = @truncate(rawInstruction & 0b1111111), .pred = pred, .succ = succ, .funct3 = funct3 },
                     };
                 },
                 0b001 => {
                     return DecodedInstruction{
-                        .FenceI = .{ .funct3 = funct3 },
+                        .FenceI = .{ .opcode = @truncate(rawInstruction & 0b1111111), .funct3 = funct3 },
                     };
                 },
                 else => return error.UnknownFunc3,
@@ -175,6 +182,7 @@ test "decode r-type instruction" {
 
     switch (instructionType) {
         .RType => |x| {
+            try std.testing.expectEqual(0b110011, x.opcode);
             try std.testing.expectEqual(3, x.rd);
             try std.testing.expectEqual(0, x.funct3);
             try std.testing.expectEqual(1, x.rs1);
@@ -191,6 +199,7 @@ test "decode i-type instruction" {
 
     switch (instructionType) {
         .IType => |i| {
+            try std.testing.expectEqual(0b0010011, i.opcode);
             try std.testing.expectEqual(5, i.rd);
             try std.testing.expectEqual(0, i.funct3);
             try std.testing.expectEqual(1, i.rs1);
@@ -206,6 +215,7 @@ test "decode s-type instruction" {
 
     switch (instructionType) {
         .SType => |s| {
+            try std.testing.expectEqual(0b0100011, s.opcode);
             try std.testing.expectEqual(1, s.rs1);
             try std.testing.expectEqual(5, s.rs2);
             try std.testing.expectEqual(2, s.funct3);
@@ -221,6 +231,7 @@ test "decode b-type instruction" {
 
     switch (instructionType) {
         .BType => |b| {
+            try std.testing.expectEqual(0b1100011, b.opcode);
             try std.testing.expectEqual(1, b.rs1);
             try std.testing.expectEqual(2, b.rs2);
             try std.testing.expectEqual(1, b.funct3);
@@ -236,6 +247,7 @@ test "decode u-type instruction" {
 
     switch (instructionType) {
         .UType => |u| {
+            try std.testing.expectEqual(0b0110111, u.opcode);
             try std.testing.expectEqual(1, u.rd);
             try std.testing.expectEqual(0x300000, u.imm);
         },
@@ -249,6 +261,7 @@ test "decode j-type instruction" {
 
     switch (instructionType) {
         .JType => |j| {
+            try std.testing.expectEqual(0b1101111, j.opcode);
             try std.testing.expectEqual(1, j.rd);
             try std.testing.expectEqual(8, j.imm);
         },
@@ -262,6 +275,7 @@ test "decode system instruction - ECALL" {
 
     switch (instructionType) {
         .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
             try std.testing.expectEqual(0b000, sys.funct3);
             try std.testing.expectEqual(0b00000, sys.imm);
         },
@@ -275,6 +289,7 @@ test "decode system instruction - EBREAK" {
 
     switch (instructionType) {
         .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
             try std.testing.expectEqual(0b000, sys.funct3);
             try std.testing.expectEqual(0b00001, sys.imm);
         },
@@ -288,6 +303,7 @@ test "decode fence instruction" {
 
     switch (instructionType) {
         .Fence => |f| {
+            try std.testing.expectEqual(0b0001111, f.opcode);
             try std.testing.expectEqual(0b1111, f.pred); // Preceding operations (rw, io)
             try std.testing.expectEqual(0b1111, f.succ); // Succeeding operations (rw, io)
             try std.testing.expectEqual(0b000, f.funct3); // Always 0 for FENCE
@@ -302,6 +318,7 @@ test "decode fence.i instruction" {
 
     switch (instructionType) {
         .FenceI => |fi| {
+            try std.testing.expectEqual(0b0001111, fi.opcode);
             try std.testing.expectEqual(0b001, fi.funct3); // Always 0b001 for FENCE.I
         },
         else => try std.testing.expect(false),
