@@ -116,13 +116,28 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .IType => |inst| {
             switch (inst.funct3) {
                 0b000 => { // ADDI
-                    if (inst.rd != 0) {
-                        const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
-                        const newValue = @addWithOverflow(rs1Value, inst.imm);
-                        cpuState.Registers[inst.rd] = @bitCast(newValue[0]);
+                    switch (inst.opcode) {
+                        0b0010011 => { // ADDI
+                            if (inst.rd != 0) {
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                                const newValue = @addWithOverflow(rs1Value, inst.imm);
+                                cpuState.Registers[inst.rd] = @bitCast(newValue[0]);
+                            }
+                        },
+                        0b0000011 => { // LB
+                        },
+                        else => return error.UnknownOpcode,
                     }
                 },
-                0b001 => {},
+                0b001 => {
+                    switch (inst.opcode) {
+                        0b0010011 => { // SLLI
+                        },
+                        0b0000011 => { // LH
+                        },
+                        else => return error.UnknownOpcode,
+                    }
+                },
                 0b010 => { // LW
                     if (inst.rd != 0) {
                         const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
@@ -136,8 +151,24 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                     }
                 },
                 0b011 => {},
-                0b100 => {},
-                0b101 => {},
+                0b100 => {
+                    switch (inst.opcode) {
+                        0b0010011 => { // XORI
+                        },
+                        0b0000011 => { // LBU
+                        },
+                        else => return error.UnknownOpcode,
+                    }
+                },
+                0b101 => {
+                    switch (inst.opcode) {
+                        0b0010011 => { // SRLI
+                        },
+                        0b0000011 => { // LHU
+                        },
+                        else => return error.UnknownOpcode,
+                    }
+                },
                 0b110 => {},
                 0b111 => { // ANDI
                     if (inst.rd != 0) {
@@ -213,19 +244,20 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
 
                     switch (syscallNumber) {
                         1 => { // Print integer
-                            try std.debug.print("ECALL: Print Integer - {d}\n", .{arg0});
+                            std.debug.print("ECALL: Print Integer - {d}\n", .{arg0});
                         },
                         2 => { // Exit emulator
-                            try std.debug.print("ECALL: Exit with code {d}\n", .{arg0});
-                            std.os.exit(@intCast(arg0));
+                            std.debug.print("ECALL: Exit with code {d}\n", .{arg0});
+                            std.process.exit(@intCast(arg0));
                         },
                         else => {
-                            try std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
+                            std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
                         },
                     }
                 },
                 0b00001 => { // EBREAK
                 },
+                else => return error.UnknownImm,
             }
             cpuState.ProgramCounter += 4;
         },
@@ -253,7 +285,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = 2;
 
     // ADD x3, x1, x2
-    const add1: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add1: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add1, &cpuState, &memory);
 
@@ -266,7 +298,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = 0;
 
     // ADD x3, x1, x2
-    const add2: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add2: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add2, &cpuState, &memory);
 
@@ -280,7 +312,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = 10;
 
     // ADD x3, x1, x2
-    const add3: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add3: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add3, &cpuState, &memory);
 
@@ -295,7 +327,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = @bitCast(v3);
 
     // ADD x3, x1, x2
-    const add4: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add4: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add4, &cpuState, &memory);
 
@@ -309,7 +341,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = 1;
 
     // ADD x3, x1, x2
-    const add5: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add5: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add5, &cpuState, &memory);
 
@@ -322,7 +354,7 @@ test "Execute ADD" {
     cpuState.Registers[2] = 0x80000000; // Largest negative 32-bit number (in two's complement)
 
     // ADD x3, x1, x2
-    const add6: DecodedInstruction = .{ .RType = .{ .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const add6: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(add6, &cpuState, &memory);
 
@@ -348,7 +380,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, 10
     const addi1: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 10 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 10 },
     };
 
     try execute(addi1, &cpuState, &memory);
@@ -362,7 +394,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, 0
     const addi2: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 0 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 0 },
     };
 
     try execute(addi2, &cpuState, &memory);
@@ -377,7 +409,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, -3
     const addi3: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm3 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm3 },
     };
 
     try execute(addi3, &cpuState, &memory);
@@ -393,7 +425,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, 3
     const addi4: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm4 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm4 },
     };
 
     try execute(addi4, &cpuState, &memory);
@@ -410,7 +442,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, -5
     const addi5: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm5 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm5 },
     };
 
     try execute(addi5, &cpuState, &memory);
@@ -426,7 +458,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, -2048
     const addi6: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm6 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm6 },
     };
 
     try execute(addi6, &cpuState, &memory);
@@ -442,7 +474,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, 2047
     const addi7: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm7 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm7 },
     };
 
     try execute(addi7, &cpuState, &memory);
@@ -457,7 +489,7 @@ test "Execute ADDI" {
 
     // ADDI x5, x1, -1
     const addi8: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm8 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm8 },
     };
 
     try execute(addi8, &cpuState, &memory);
@@ -487,7 +519,7 @@ test "Execute LW" {
     cpuState.Registers[1] = 0; // Base address in x1
 
     // LW x2, 4(x1)
-    const lw1: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = 4, .rd = 2, .rs1 = 1 } };
+    const lw1: DecodedInstruction = .{ .IType = .{ .opcode = 0b0000011, .funct3 = 0b010, .imm = 4, .rd = 2, .rs1 = 1 } };
 
     try execute(lw1, &cpuState, &memory);
 
@@ -499,7 +531,7 @@ test "Execute LW" {
     cpuState.Registers[1] = 0;
 
     // LW x2, 8(x1)
-    const lw2: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = 8, .rd = 2, .rs1 = 1 } };
+    const lw2: DecodedInstruction = .{ .IType = .{ .opcode = 0b0000011, .funct3 = 0b010, .imm = 8, .rd = 2, .rs1 = 1 } };
 
     try execute(lw2, &cpuState, &memory);
 
@@ -513,7 +545,7 @@ test "Execute LW" {
     const imm3: i32 = -4;
 
     // LW x2, -4(x1)
-    const lw3: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = imm3, .rd = 2, .rs1 = 1 } };
+    const lw3: DecodedInstruction = .{ .IType = .{ .opcode = 0b0000011, .funct3 = 0b010, .imm = imm3, .rd = 2, .rs1 = 1 } };
 
     try execute(lw3, &cpuState, &memory);
 
@@ -525,7 +557,7 @@ test "Execute LW" {
     cpuState.Registers[1] = 0;
 
     // LW x2, 12(x1)
-    const lw4: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = 12, .rd = 2, .rs1 = 1 } };
+    const lw4: DecodedInstruction = .{ .IType = .{ .opcode = 0b0000011, .funct3 = 0b010, .imm = 12, .rd = 2, .rs1 = 1 } };
 
     try execute(lw4, &cpuState, &memory);
 
@@ -538,7 +570,7 @@ test "Execute LW" {
     cpuState.Registers[1] = 1; // Base address in x1 (unaligned address)
 
     // LW x2, 2(x1)
-    const lw5: DecodedInstruction = .{ .IType = .{ .funct3 = 0b010, .imm = 2, .rd = 2, .rs1 = 1 } };
+    const lw5: DecodedInstruction = .{ .IType = .{ .opcode = 0b0000011, .funct3 = 0b010, .imm = 2, .rd = 2, .rs1 = 1 } };
     const err = execute(lw5, &cpuState, &memory);
 
     try std.testing.expectError(error.MisalignedAddress, err);
@@ -562,7 +594,7 @@ test "Execute SW" {
 
     // SW x2, 4(x1)
     const sw1: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = 4, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = 4, .rs2 = 2 },
     };
 
     try execute(sw1, &cpuState, &memory);
@@ -579,7 +611,7 @@ test "Execute SW" {
 
     // SW x2, 0(x1)
     const sw2: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
     };
 
     try execute(sw2, &cpuState, &memory);
@@ -597,7 +629,7 @@ test "Execute SW" {
 
     // SW x2, -4(x1)
     const sw3: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = imm3, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = imm3, .rs2 = 2 },
     };
 
     try execute(sw3, &cpuState, &memory);
@@ -614,7 +646,7 @@ test "Execute SW" {
 
     // SW x2, 0(x1)
     const sw4a: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
     };
 
     try execute(sw4a, &cpuState, &memory);
@@ -628,7 +660,7 @@ test "Execute SW" {
 
     // SW x2, 0(x1)
     const sw4b: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
     };
 
     try execute(sw4b, &cpuState, &memory);
@@ -645,7 +677,7 @@ test "Execute SW" {
 
     // SW x2, 0(x1)
     const sw5: DecodedInstruction = .{
-        .SType = .{ .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b010, .rs1 = 1, .imm = 0, .rs2 = 2 },
     };
 
     const err = execute(sw5, &cpuState, &memory);
@@ -672,7 +704,7 @@ test "Execute BEQ" {
 
     // BEQ x1, x2, 12
     const beq1: DecodedInstruction = .{
-        .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 },
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 },
     };
 
     try execute(beq1, &cpuState, &memory);
@@ -686,7 +718,7 @@ test "Execute BEQ" {
 
     // BEQ x1, x2, 12
     const beq2: DecodedInstruction = .{
-        .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 },
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 12 },
     };
 
     try execute(beq2, &cpuState, &memory);
@@ -702,7 +734,7 @@ test "Execute BEQ" {
 
     // BEQ x1, x2, -16
     const beq3: DecodedInstruction = .{
-        .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = imm3 },
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = imm3 },
     };
 
     try execute(beq3, &cpuState, &memory);
@@ -716,7 +748,7 @@ test "Execute BEQ" {
 
     // BEQ x1, x2, 0
     const beq4: DecodedInstruction = .{
-        .BType = .{ .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 0 },
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 0 },
     };
 
     try execute(beq4, &cpuState, &memory);
@@ -740,7 +772,7 @@ test "Execute J/JAL" {
     cpuState.ProgramCounter = 12;
 
     // J 12
-    const j1: DecodedInstruction = .{ .JType = .{ .rd = 0, .imm = 12 } };
+    const j1: DecodedInstruction = .{ .JType = .{ .opcode = 0b1101111, .rd = 0, .imm = 12 } };
 
     try execute(j1, &cpuState, &memory);
 
@@ -752,7 +784,7 @@ test "Execute J/JAL" {
 
     // J -16
     const imm2: i32 = -16;
-    const j2: DecodedInstruction = .{ .JType = .{ .rd = 0, .imm = imm2 } };
+    const j2: DecodedInstruction = .{ .JType = .{ .opcode = 0b1101111, .rd = 0, .imm = imm2 } };
 
     try execute(j2, &cpuState, &memory);
 
@@ -763,7 +795,7 @@ test "Execute J/JAL" {
     cpuState.ProgramCounter = 16;
 
     // J 12, link to x1
-    const j3: DecodedInstruction = .{ .JType = .{ .rd = 1, .imm = 12 } };
+    const j3: DecodedInstruction = .{ .JType = .{ .opcode = 0b1101111, .rd = 1, .imm = 12 } };
 
     try execute(j3, &cpuState, &memory);
 
@@ -775,7 +807,7 @@ test "Execute J/JAL" {
 
     // J -24, link to x2
     const imm4: i32 = -24;
-    const j4: DecodedInstruction = .{ .JType = .{ .rd = 2, .imm = imm4 } };
+    const j4: DecodedInstruction = .{ .JType = .{ .opcode = 0b1101111, .rd = 2, .imm = imm4 } };
 
     try execute(j4, &cpuState, &memory);
 
@@ -796,7 +828,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt1: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt1: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt1, &cpuState, &memory);
 
@@ -809,7 +841,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = 5; // rs2
 
     // SLT x3, x1, x2
-    const slt2: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt2: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt2, &cpuState, &memory);
 
@@ -822,7 +854,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt3: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt3: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt3, &cpuState, &memory);
 
@@ -836,7 +868,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt4: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt4: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt4, &cpuState, &memory);
 
@@ -850,7 +882,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = @bitCast(v1); // rs2
 
     // SLT x3, x1, x2
-    const slt5: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt5: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt5, &cpuState, &memory);
 
@@ -864,7 +896,7 @@ test "Execute SLT" {
     cpuState.Registers[2] = @bitCast(v2); // rs2
 
     // SLT x3, x1, x2
-    const slt6: DecodedInstruction = .{ .RType = .{ .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
+    const slt6: DecodedInstruction = .{ .RType = .{ .opcode = 0b0110011, .funct3 = 0b010, .funct7 = 0x0000000, .rd = 3, .rs1 = 1, .rs2 = 2 } };
 
     try execute(slt6, &cpuState, &memory);
 
@@ -890,7 +922,7 @@ test "Execute ANDI" {
 
     // ANDI x5, x1, 0b11110000
     const andi1: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm1 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm1 },
     };
 
     try execute(andi1, &cpuState, &memory);
@@ -905,7 +937,7 @@ test "Execute ANDI" {
 
     // ANDI x5, x1, 0
     const andi2: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm2 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm2 },
     };
 
     try execute(andi2, &cpuState, &memory);
@@ -920,7 +952,7 @@ test "Execute ANDI" {
 
     // ANDI x5, x1, -1
     const andi3: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm3 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm3 },
     };
 
     try execute(andi3, &cpuState, &memory);
@@ -935,7 +967,7 @@ test "Execute ANDI" {
 
     // ANDI x5, x1, -16
     const andi4: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm4 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm4 },
     };
 
     try execute(andi4, &cpuState, &memory);
@@ -950,7 +982,7 @@ test "Execute ANDI" {
 
     // ANDI x5, x1, 0x7FF
     const andi5: DecodedInstruction = .{
-        .IType = .{ .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm5 },
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b111, .rd = 5, .rs1 = 1, .imm = imm5 },
     };
 
     try execute(andi5, &cpuState, &memory);
@@ -977,7 +1009,7 @@ test "Execute OR" {
 
     // OR x5, x1, x2
     const or1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(or1, &cpuState, &memory);
@@ -992,7 +1024,7 @@ test "Execute OR" {
 
     // OR x5, x1, x2
     const or2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(or2, &cpuState, &memory);
@@ -1007,7 +1039,7 @@ test "Execute OR" {
 
     // OR x5, x1, x2
     const or3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(or3, &cpuState, &memory);
@@ -1022,7 +1054,7 @@ test "Execute OR" {
 
     // OR x5, x1, x2
     const or4: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(or4, &cpuState, &memory);
@@ -1037,7 +1069,7 @@ test "Execute OR" {
 
     // OR x5, x1, x2
     const or5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b110, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(or5, &cpuState, &memory);
@@ -1064,7 +1096,7 @@ test "Execute SLL" {
 
     // SLL x5, x1, x2
     const sll1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sll1, &cpuState, &memory);
@@ -1079,7 +1111,7 @@ test "Execute SLL" {
 
     // SLL x5, x1, x2
     const sll2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sll2, &cpuState, &memory);
@@ -1094,7 +1126,7 @@ test "Execute SLL" {
 
     // SLL x5, x1, x2
     const sll3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sll3, &cpuState, &memory);
@@ -1109,7 +1141,7 @@ test "Execute SLL" {
 
     // SLL x5, x1, x2
     const sll5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b001, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sll5, &cpuState, &memory);
@@ -1136,7 +1168,7 @@ test "Execute XOR" {
 
     // XOR x5, x1, x2
     const xor1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(xor1, &cpuState, &memory);
@@ -1151,7 +1183,7 @@ test "Execute XOR" {
 
     // XOR x5, x1, x2
     const xor2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(xor2, &cpuState, &memory);
@@ -1166,7 +1198,7 @@ test "Execute XOR" {
 
     // XOR x5, x1, x2
     const xor3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(xor3, &cpuState, &memory);
@@ -1181,7 +1213,7 @@ test "Execute XOR" {
 
     // XOR x5, x1, x2
     const xor4: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(xor4, &cpuState, &memory);
@@ -1196,7 +1228,7 @@ test "Execute XOR" {
 
     // XOR x5, x1, x2
     const xor5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b100, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(xor5, &cpuState, &memory);
@@ -1223,7 +1255,7 @@ test "Execute SLTU" {
 
     // SLTU x5, x1, x2
     const sltu1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sltu1, &cpuState, &memory);
@@ -1238,7 +1270,7 @@ test "Execute SLTU" {
 
     // SLTU x5, x1, x2
     const sltu2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sltu2, &cpuState, &memory);
@@ -1253,7 +1285,7 @@ test "Execute SLTU" {
 
     // SLTU x5, x1, x2
     const sltu3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sltu3, &cpuState, &memory);
@@ -1268,7 +1300,7 @@ test "Execute SLTU" {
 
     // SLTU x5, x1, x2
     const sltu4: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sltu4, &cpuState, &memory);
@@ -1283,7 +1315,7 @@ test "Execute SLTU" {
 
     // SLTU x5, x1, x2
     const sltu5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b011, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sltu5, &cpuState, &memory);
@@ -1310,7 +1342,7 @@ test "Execute SRL" {
 
     // SRL x5, x1, x2
     const srl1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(srl1, &cpuState, &memory);
@@ -1325,7 +1357,7 @@ test "Execute SRL" {
 
     // SRL x5, x1, x2
     const srl2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(srl2, &cpuState, &memory);
@@ -1340,7 +1372,7 @@ test "Execute SRL" {
 
     // SRL x5, x1, x2
     const srl3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(srl3, &cpuState, &memory);
@@ -1355,7 +1387,7 @@ test "Execute SRL" {
 
     // SRL x5, x1, x2
     const srl5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(srl5, &cpuState, &memory);
@@ -1382,7 +1414,7 @@ test "Execute SRA" {
 
     // SRA x5, x1, x2
     const sra1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sra1, &cpuState, &memory);
@@ -1398,7 +1430,7 @@ test "Execute SRA" {
 
     // SRA x5, x1, x2
     const sra2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sra2, &cpuState, &memory);
@@ -1415,7 +1447,7 @@ test "Execute SRA" {
 
     // SRA x5, x1, x2
     const sra3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sra3, &cpuState, &memory);
@@ -1431,7 +1463,7 @@ test "Execute SRA" {
 
     // SRA x5, x1, x2
     const sra4: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sra4, &cpuState, &memory);
@@ -1448,7 +1480,7 @@ test "Execute SRA" {
 
     // SRA x5, x1, x2
     const sra5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b101, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(sra5, &cpuState, &memory);
@@ -1475,7 +1507,7 @@ test "Execute AND" {
 
     // AND x5, x1, x2
     const and1: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(and1, &cpuState, &memory);
@@ -1490,7 +1522,7 @@ test "Execute AND" {
 
     // AND x5, x1, x2
     const and2: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(and2, &cpuState, &memory);
@@ -1505,7 +1537,7 @@ test "Execute AND" {
 
     // AND x5, x1, x2
     const and3: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(and3, &cpuState, &memory);
@@ -1520,7 +1552,7 @@ test "Execute AND" {
 
     // AND x5, x1, x2
     const and4: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(and4, &cpuState, &memory);
@@ -1535,7 +1567,7 @@ test "Execute AND" {
 
     // AND x5, x1, x2
     const and5: DecodedInstruction = .{
-        .RType = .{ .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b111, .funct7 = 0b0000000, .rd = 5, .rs1 = 1, .rs2 = 2 },
     };
 
     try execute(and5, &cpuState, &memory);
