@@ -13,107 +13,73 @@ pub const CPUState = struct {
 pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memory: *Memory) !void {
     switch (decodedInstruction) {
         .RType => |inst| {
-            switch (inst.opcode) {
-                0b0110011 => {
-                    switch (inst.funct3) {
-                        0b000 => {
-                            switch (inst.funct7) {
-                                0b0000000 => { // ADD
-                                    if (inst.rd != 0) {
-                                        const rs1Value = cpuState.Registers[inst.rs1];
-                                        const rs2Value = cpuState.Registers[inst.rs2];
+            if (inst.rd != 0) {
+                const rs1Value = cpuState.Registers[inst.rs1];
+                const rs2Value = cpuState.Registers[inst.rs2];
+                switch (inst.opcode) {
+                    0b0110011 => {
+                        switch (inst.funct3) {
+                            0b000 => {
+                                switch (inst.funct7) {
+                                    0b0000000 => { // ADD
                                         const value = @addWithOverflow(rs1Value, rs2Value);
                                         cpuState.Registers[inst.rd] = value[0];
-                                    }
-                                },
-                                0b0100000 => { // SUB
-                                    if (inst.rd != 0) {
-                                        cpuState.Registers[inst.rd] = cpuState.Registers[inst.rs1] - cpuState.Registers[inst.rs2];
-                                    }
-                                },
-                                else => return error.UnknownFunct7,
-                            }
-                        },
-                        0b001 => { // SLL
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
-                                const shiftAmount: u5 = @truncate(cpuState.Registers[inst.rs2]);
+                                    },
+                                    0b0100000 => { // SUB
+                                        const value = @subWithOverflow(rs1Value, rs2Value);
+                                        cpuState.Registers[inst.rd] = value[0];
+                                    },
+                                    else => return error.UnknownFunct7,
+                                }
+                            },
+                            0b001 => { // SLL
+                                const shiftAmount: u5 = @truncate(rs2Value);
                                 cpuState.Registers[inst.rd] = rs1Value << shiftAmount;
-                            }
-                        },
-                        0b010 => { // SLT
-                            if (inst.rd != 0) {
-                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
-                                const rs2Value: i32 = @bitCast(cpuState.Registers[inst.rs2]);
+                            },
+                            0b010 => { // SLT
+                                const rs1Signed: i32 = @bitCast(rs1Value);
+                                const rs2Signed: i32 = @bitCast(rs2Value);
+                                if (rs1Signed < rs2Signed) {
+                                    cpuState.Registers[inst.rd] = 1;
+                                } else {
+                                    cpuState.Registers[inst.rd] = 0;
+                                }
+                            },
+                            0b011 => { // SLTU
                                 if (rs1Value < rs2Value) {
                                     cpuState.Registers[inst.rd] = 1;
                                 } else {
                                     cpuState.Registers[inst.rd] = 0;
                                 }
-                            }
-                        },
-                        0b011 => { // SLTU
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
-                                const rs2Value = cpuState.Registers[inst.rs2];
-                                if (rs1Value < rs2Value) {
-                                    cpuState.Registers[inst.rd] = 1;
-                                } else {
-                                    cpuState.Registers[inst.rd] = 0;
-                                }
-                            }
-                        },
-                        0b100 => { // XOR
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
-                                const rs2Value = cpuState.Registers[inst.rs2];
+                            },
+                            0b100 => { // XOR
                                 cpuState.Registers[inst.rd] = rs1Value ^ rs2Value;
-                            }
-                        },
-                        0b101 => {
-                            switch (inst.funct7) {
-                                0b0000000 => { // SRL
-                                    if (inst.rd != 0) {
-                                        const rs1Value = cpuState.Registers[inst.rs1];
-                                        const shiftAmount: u5 = @truncate(cpuState.Registers[inst.rs2]);
+                            },
+                            0b101 => {
+                                switch (inst.funct7) {
+                                    0b0000000 => { // SRL
+                                        const shiftAmount: u5 = @truncate(rs2Value);
                                         cpuState.Registers[inst.rd] = rs1Value >> shiftAmount;
-                                    }
-                                },
-                                0b0100000 => { // SRA
-                                    if (inst.rd != 0) {
-                                        const rs1Value = cpuState.Registers[inst.rs1];
-                                        const shiftAmount: u5 = @truncate(cpuState.Registers[inst.rs2]);
-
-                                        // Cast `rs1Value` to a signed type for arithmetic shift
+                                    },
+                                    0b0100000 => { // SRA
+                                        const shiftAmount: u5 = @truncate(rs2Value);
                                         const signedRs1Value: i32 = @bitCast(rs1Value);
-
-                                        // Perform arithmetic right shift
                                         const result: i32 = signedRs1Value >> shiftAmount;
-
-                                        // Store result back as unsigned in the destination register
                                         cpuState.Registers[inst.rd] = @bitCast(result);
-                                    }
-                                },
-                                else => return error.UnknownFunct7,
-                            }
-                        },
-                        0b110 => { // OR
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
-                                const rs2Value = cpuState.Registers[inst.rs2];
+                                    },
+                                    else => return error.UnknownFunct7,
+                                }
+                            },
+                            0b110 => { // OR
                                 cpuState.Registers[inst.rd] = rs1Value | rs2Value;
-                            }
-                        },
-                        0b111 => { // AND
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
-                                const rs2Value = cpuState.Registers[inst.rs2];
+                            },
+                            0b111 => { // AND
                                 cpuState.Registers[inst.rd] = rs1Value & rs2Value;
-                            }
-                        },
-                    }
-                },
-                else => return error.UnknownOpcode,
+                            },
+                        }
+                    },
+                    else => return error.UnknownOpcode,
+                }
             }
             cpuState.ProgramCounter += 4;
         },
@@ -130,24 +96,26 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                         },
                         0b001 => { // SLLI
                         },
-                        0b010 => { // LW
-                            if (inst.rd != 0) {
-                                const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
-                                const address = rs1Value + inst.imm;
-
-                                if (address & 0b11 != 0) {
-                                    return error.MisalignedAddress;
-                                }
-
-                                cpuState.Registers[inst.rd] = try memory.read32(@intCast(address));
-                            }
+                        0b010 => { // SLTI
                         },
-                        0b011 => {},
+                        0b011 => { // SLTIU
+                        },
                         0b100 => { // XORI
+                            if (inst.rd != 0) {
+                                const rs1Value = cpuState.Registers[inst.rs1];
+                                const immUnsigned: u32 = @bitCast(inst.imm);
+                                cpuState.Registers[inst.rd] = rs1Value ^ immUnsigned;
+                            }
                         },
                         0b101 => { // SRLI
                         },
-                        0b110 => {},
+                        0b110 => { // ORI
+                            if (inst.rd != 0) {
+                                const rs1Value = cpuState.Registers[inst.rs1];
+                                const immUnsigned: u32 = @bitCast(inst.imm);
+                                cpuState.Registers[inst.rd] = rs1Value | immUnsigned;
+                            }
+                        },
                         0b111 => { // ANDI
                             if (inst.rd != 0) {
                                 const rs1Value = cpuState.Registers[inst.rs1];
@@ -160,6 +128,16 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b0000011 => {
                     switch (inst.funct3) {
                         0b000 => { // LB
+                            if (inst.rd != 0) {
+                                const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                                const address = rs1Value + inst.imm;
+
+                                if (address & 0b11 != 0) {
+                                    return error.MisalignedAddress;
+                                }
+
+                                cpuState.Registers[inst.rd] = try memory.read8(@intCast(address));
+                            }
                         },
                         0b001 => { // LH
                         },
