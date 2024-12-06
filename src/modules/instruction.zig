@@ -36,6 +36,18 @@ pub const DecodedInstruction = union(enum) {
         rd: u5, // Bits [7:11]: Destination register (holds the return address).
         imm: i32, // Calculated immediate value (sign-extended).
     },
+    System: struct {
+        imm: u5, // Bits [24:20]: Immediate
+        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ECALL, EBREAK).
+    },
+    Fence: struct {
+        pred: u4, // Bits [27:24]: Preceding memory operations mask.
+        succ: u4, // Bits [23:20]: Succeeding memory operations mask.
+        funct3: u3, // Bits [12:14]: Always `0b000`.
+    },
+    FenceI: struct {
+        funct3: u3, // Bits [12:14]: Always `0b001` for FENCE.I.
+    },
 };
 
 pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
@@ -109,6 +121,34 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                     .imm = signExtend((imm3 << 20) | (imm0 << 12) | (imm1 << 11) | (imm2 << 1), 21),
                 },
             };
+        },
+        0b1110011 => { // SYSTEM
+            const imm: u5 = @truncate((rawInstruction >> 20) & 0b11111); // Bits [24:20]: Immediate
+            const funct3: u3 = @truncate((rawInstruction >> 12) & 0b111); // Bits [14:12]
+            return DecodedInstruction{
+                .System = .{
+                    .imm = imm,
+                    .funct3 = funct3,
+                },
+            };
+        },
+        0b0001111 => { // FENCE / FENCE.I
+            const funct3: u3 = @truncate((rawInstruction >> 12) & 0b111); // Bits [14:12]: Always `0b000` for FENCE.
+            switch (funct3) {
+                0b000 => {
+                    const pred: u4 = @truncate((rawInstruction >> 24) & 0b1111); // Bits [27:24]
+                    const succ: u4 = @truncate((rawInstruction >> 20) & 0b1111); // Bits [23:20]
+                    return DecodedInstruction{
+                        .Fence = .{ .pred = pred, .succ = succ, .funct3 = funct3 },
+                    };
+                },
+                0b001 => {
+                    return DecodedInstruction{
+                        .FenceI = .{ .funct3 = funct3 },
+                    };
+                },
+                else => return error.UnknownFunc3,
+            }
         },
         else => return error.UnknownOpcode,
     }
@@ -202,6 +242,58 @@ test "decode j-type instruction" {
         .JType => |j| {
             try std.testing.expectEqual(1, j.rd);
             try std.testing.expectEqual(8, j.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - ECALL" {
+    const inst: RawInstruction = 0x00000073; // ECALL
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b000, sys.funct3);
+            try std.testing.expectEqual(0b00000, sys.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - EBREAK" {
+    const inst: RawInstruction = 0x00100073; // EBREAK
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b000, sys.funct3);
+            try std.testing.expectEqual(0b00001, sys.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode fence instruction" {
+    const inst: RawInstruction = 0x0FF0000F; // FENCE rw, rw
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .Fence => |f| {
+            try std.testing.expectEqual(0b1111, f.pred); // Preceding operations (rw, io)
+            try std.testing.expectEqual(0b1111, f.succ); // Succeeding operations (rw, io)
+            try std.testing.expectEqual(0b000, f.funct3); // Always 0 for FENCE
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode fence.i instruction" {
+    const inst: RawInstruction = 0x0000100F; // FENCE.I
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .FenceI => |fi| {
+            try std.testing.expectEqual(0b001, fi.funct3); // Always 0b001 for FENCE.I
         },
         else => try std.testing.expect(false),
     }

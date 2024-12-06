@@ -205,6 +205,38 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             const pcAsSigned: i32 = @bitCast(cpuState.ProgramCounter);
             cpuState.ProgramCounter = @bitCast(pcAsSigned + inst.imm);
         },
+        .System => |inst| {
+            switch (inst.imm) {
+                0b00000 => { // ECALL
+                    const syscallNumber = cpuState.Registers[17]; // a7 is 17 in RISC-V ABI
+                    const arg0 = cpuState.Registers[10]; // a0 is x10 in RISC-V ABI
+
+                    switch (syscallNumber) {
+                        1 => { // Print integer
+                            try std.debug.print("ECALL: Print Integer - {d}\n", .{arg0});
+                        },
+                        2 => { // Exit emulator
+                            try std.debug.print("ECALL: Exit with code {d}\n", .{arg0});
+                            std.os.exit(@intCast(arg0));
+                        },
+                        else => {
+                            try std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
+                        },
+                    }
+                },
+                0b00001 => { // EBREAK
+                },
+            }
+            cpuState.ProgramCounter += 4;
+        },
+        .Fence => |_| {
+            // Since we're not simulating memory realistically, there's nothing to do here
+            cpuState.ProgramCounter += 4;
+        },
+        .FenceI => |_| {
+            // Since we're not simulating memory realistically, there's nothing to do here
+            cpuState.ProgramCounter += 4;
+        },
     }
 }
 
