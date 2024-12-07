@@ -100,17 +100,20 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             };
         },
         0b1100011 => { // B-Type
-            const imm0 = (rawInstruction >> 7) & 0b1111; // imm[4:1]
-            const imm1 = (rawInstruction >> 11) & 0b1; // imm[11]
-            const imm2 = (rawInstruction >> 25) & 0b111111; // imm[10:5]
-            const imm3 = (rawInstruction >> 31) & 0b1; // imm[12]
+            const imm0: u32 = (rawInstruction >> 8) & 0b1111; // imm[4:1]
+            const imm1: u32 = (rawInstruction & 0b10000000) >> 7; // imm[11]
+            const imm2: u32 = (rawInstruction >> 25) & 0b111111; // imm[10:5]
+            const imm3: u32 = (rawInstruction >> 31) & 0b1; // imm[12]
+
+            const imm: u32 = (imm3 << 12) | (imm1 << 11) | (imm2 << 5) | (imm0 << 1);
+
             return DecodedInstruction{
                 .BType = .{
                     .opcode = @truncate(rawInstruction & 0b1111111),
                     .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
                     .rs2 = @truncate((rawInstruction >> 20) & 0b11111),
                     .funct3 = @truncate((rawInstruction >> 12) & 0b111),
-                    .imm = signExtend((imm3 << 12) | (imm2 << 5) | (imm1 << 11) | (imm0 << 1), 13),
+                    .imm = signExtend(imm, 13),
                 },
             };
         },
@@ -170,10 +173,33 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
     }
 }
 
-fn signExtend(value: u32, bits: u8) i32 {
-    const shift: u5 = @truncate(32 - bits);
-    const val: i32 = @bitCast(value);
-    return (val << shift) >> shift;
+fn signExtend(value: u32, comptime bits: u5) i32 {
+    const signMask = @as(u32, 1) << (bits - 1);
+
+    if ((value & signMask) != 0) {
+        const signExtension: u32 = ~@as(u32, 0) << bits;
+        return @bitCast(signExtension | value);
+    }
+
+    return @bitCast(value);
+}
+
+test "signExtend function" {
+    // Positive values (no sign extension required)
+    try std.testing.expectEqual(5, signExtend(0b00000101, 6)); // 5
+    try std.testing.expectEqual(15, signExtend(0b001111, 6)); // 15
+
+    // Negative values (sign extension required)
+    try std.testing.expectEqual(-1, signExtend(0b111111, 6)); // -1
+    try std.testing.expectEqual(-32, signExtend(0b100000, 6)); // -32
+    try std.testing.expectEqual(-128, signExtend(0b10000000, 8)); // -128
+
+    // Edge cases
+    try std.testing.expectEqual(0, signExtend(0b0, 6)); // 0 (zero case)
+    try std.testing.expectEqual(-16, signExtend(0b1110000, 7)); // -16
+    try std.testing.expectEqual(127, signExtend(0b01111111, 8)); // 127 (maximum positive for 8 bits)
+    try std.testing.expectEqual(-32768, signExtend(0b1000000000000000, 16)); // -32768
+    try std.testing.expectEqual(32767, signExtend(0b0111111111111111, 16)); // 32767
 }
 
 test "decode r-type instruction" {
@@ -226,7 +252,7 @@ test "decode s-type instruction" {
 }
 
 test "decode b-type instruction" {
-    const inst: RawInstruction = 0x00209463; // BEQ x1, x2, 16
+    const inst: RawInstruction = 0x00209463; // BEQ x1, x2, 8
     const instructionType = try decode(inst);
 
     switch (instructionType) {
@@ -235,7 +261,23 @@ test "decode b-type instruction" {
             try std.testing.expectEqual(1, b.rs1);
             try std.testing.expectEqual(2, b.rs2);
             try std.testing.expectEqual(1, b.funct3);
-            try std.testing.expectEqual(16, b.imm);
+            try std.testing.expectEqual(8, b.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode b-type instruction 2" {
+    const inst: RawInstruction = 0x00209463; // BLT x1, x2, -8
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .BType => |b| {
+            try std.testing.expectEqual(0b1100011, b.opcode);
+            try std.testing.expectEqual(1, b.rs1);
+            try std.testing.expectEqual(2, b.rs2);
+            try std.testing.expectEqual(5, b.funct3);
+            try std.testing.expectEqual(-8, b.imm);
         },
         else => try std.testing.expect(false),
     }
