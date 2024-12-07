@@ -22,10 +22,12 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             0b000 => {
                                 switch (inst.funct7) {
                                     0b0000000 => { // ADD
+                                        // TESTED
                                         const value = @addWithOverflow(rs1Value, rs2Value);
                                         cpuState.Registers[inst.rd] = value[0];
                                     },
                                     0b0100000 => { // SUB
+                                        // TESTED
                                         const value = @subWithOverflow(rs1Value, rs2Value);
                                         cpuState.Registers[inst.rd] = value[0];
                                     },
@@ -33,10 +35,12 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b001 => { // SLL
+                                // TESTED
                                 const shiftAmount: u5 = @truncate(rs2Value);
                                 cpuState.Registers[inst.rd] = rs1Value << shiftAmount;
                             },
                             0b010 => { // SLT
+                                // TESTED
                                 const rs1Signed: i32 = @bitCast(rs1Value);
                                 const rs2Signed: i32 = @bitCast(rs2Value);
                                 if (rs1Signed < rs2Signed) {
@@ -46,6 +50,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b011 => { // SLTU
+                                // TESTED
                                 if (rs1Value < rs2Value) {
                                     cpuState.Registers[inst.rd] = 1;
                                 } else {
@@ -53,15 +58,18 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b100 => { // XOR
+                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value ^ rs2Value;
                             },
                             0b101 => {
                                 switch (inst.funct7) {
                                     0b0000000 => { // SRL
+                                        // TESTED
                                         const shiftAmount: u5 = @truncate(rs2Value);
                                         cpuState.Registers[inst.rd] = rs1Value >> shiftAmount;
                                     },
                                     0b0100000 => { // SRA
+                                        // TESTED
                                         const shiftAmount: u5 = @truncate(rs2Value);
                                         const signedRs1Value: i32 = @bitCast(rs1Value);
                                         const result: i32 = signedRs1Value >> shiftAmount;
@@ -71,9 +79,11 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b110 => { // OR
+                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value | rs2Value;
                             },
                             0b111 => { // AND
+                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value & rs2Value;
                             },
                         }
@@ -86,76 +96,104 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .IType => |inst| {
             switch (inst.opcode) {
                 0b0010011 => {
-                    switch (inst.funct3) {
-                        0b000 => { // ADDI
-                            if (inst.rd != 0) {
-                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
-                                const newValue = @addWithOverflow(rs1Value, inst.imm);
+                    if (inst.rd != 0) {
+                        const rs1Value = cpuState.Registers[inst.rs1];
+                        switch (inst.funct3) {
+                            0b000 => { // ADDI
+                                // TESTED
+                                const rs1Signed: i32 = @bitCast(rs1Value);
+                                const newValue = @addWithOverflow(rs1Signed, inst.imm);
                                 cpuState.Registers[inst.rd] = @bitCast(newValue[0]);
-                            }
-                        },
-                        0b001 => { // SLLI
-                        },
-                        0b010 => { // SLTI
-                        },
-                        0b011 => { // SLTIU
-                        },
-                        0b100 => { // XORI
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
+                            },
+                            0b001 => { // SLLI
+                                // TESTED
+                                const immUnsigned: u32 = @bitCast(inst.imm);
+                                const shiftAmount: u5 = @truncate(immUnsigned);
+                                cpuState.Registers[inst.rd] = rs1Value << shiftAmount;
+                            },
+                            0b010 => { // SLTI
+                                // TESTED
+                                const rs1Signed: i32 = @bitCast(rs1Value);
+                                if (rs1Signed < inst.imm) {
+                                    cpuState.Registers[inst.rd] = 1;
+                                } else {
+                                    cpuState.Registers[inst.rd] = 0;
+                                }
+                            },
+                            0b011 => { // SLTIU
+                                // TESTED
+                                const immUnsigned: u32 = @bitCast(inst.imm);
+                                if (rs1Value < immUnsigned) {
+                                    cpuState.Registers[inst.rd] = 1;
+                                } else {
+                                    cpuState.Registers[inst.rd] = 0;
+                                }
+                            },
+                            0b100 => { // XORI
+                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value ^ immUnsigned;
-                            }
-                        },
-                        0b101 => { // SRLI
-                        },
-                        0b110 => { // ORI
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
+                            },
+                            0b101 => { // SRLI
+                                // TESTED
+                                const immUnsigned: u32 = @bitCast(inst.imm);
+                                const shiftAmount: u5 = @truncate(immUnsigned);
+                                cpuState.Registers[inst.rd] = rs1Value >> shiftAmount;
+                            },
+                            0b110 => { // ORI
+                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value | immUnsigned;
-                            }
-                        },
-                        0b111 => { // ANDI
-                            if (inst.rd != 0) {
-                                const rs1Value = cpuState.Registers[inst.rs1];
+                            },
+                            0b111 => { // ANDI
+                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value & immUnsigned;
-                            }
-                        },
+                            },
+                        }
                     }
                 },
                 0b0000011 => {
                     switch (inst.funct3) {
                         0b000 => { // LB
+                            // TESTED
                             if (inst.rd != 0) {
-                                const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
-                                const address = rs1Value + inst.imm;
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                                const address: u32 = @bitCast(rs1Value + inst.imm);
 
-                                if (address & 0b11 != 0) {
-                                    return error.MisalignedAddress;
+                                const loadedByte = try memory.read8(address);
+                                const byteAsWord = @as(u32, loadedByte);
+
+                                if (loadedByte & 0x80 != 0) {
+                                    const signedValue = 0xFFFFFF00 | byteAsWord;
+                                    cpuState.Registers[inst.rd] = signedValue;
+                                } else {
+                                    cpuState.Registers[inst.rd] = byteAsWord;
                                 }
-
-                                cpuState.Registers[inst.rd] = try memory.read8(@intCast(address));
                             }
                         },
                         0b001 => { // LH
+                            // UNTESTED
                         },
                         0b010 => { // LW
+                            // TESTED
                             if (inst.rd != 0) {
-                                const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address = rs1Value + inst.imm;
 
                                 if (address & 0b11 != 0) {
                                     return error.MisalignedAddress;
                                 }
 
-                                cpuState.Registers[inst.rd] = try memory.read32(@intCast(address));
+                                const addressUnsigned: u32 = @bitCast(address);
+                                cpuState.Registers[inst.rd] = try memory.read32(addressUnsigned);
                             }
                         },
                         0b100 => { // LBU
+                            // UNTESTED
                         },
                         0b101 => { // LHU
+                            // UNTESTED
                         },
                         else => return error.UnknownFunct3,
                     }
@@ -169,10 +207,13 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b0100011 => {
                     switch (inst.funct3) {
                         0b000 => { // SB
+                            // UNTESTED
                         },
                         0b001 => { // SH
+                            // UNTESTED
                         },
                         0b010 => { // SW
+                            // TESTED
                             const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
                             const address: u32 = @intCast(rs1Value + inst.imm);
 
@@ -194,6 +235,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b1100011 => {
                     switch (inst.funct3) {
                         0b000 => { // BEQ
+                            // TESTED
                             const rs1Value = cpuState.Registers[inst.rs1];
                             const rs2Value = cpuState.Registers[inst.rs2];
                             if (rs1Value == rs2Value and inst.imm != 0) {
@@ -205,14 +247,19 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b001 => { // BNE
+                            // UNTESTED
                         },
                         0b100 => { // BLT
+                            // UNTESTED
                         },
                         0b101 => { // BGE
+                            // UNTESTED
                         },
                         0b110 => { // BLTU
+                            // UNTESTED
                         },
                         0b111 => { // BGEU
+                            // UNTESTED
                         },
                         else => return error.UnknownFunct3,
                     }
@@ -223,8 +270,10 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .UType => |inst| {
             switch (inst.opcode) {
                 0b0110111 => { // LUI
+                    // UNTESTED
                 },
                 0b0010111 => { // AUIPC
+                    // UNTESTED
                 },
                 else => return error.UnknownOpcode,
             }
@@ -232,7 +281,8 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         },
         .JType => |inst| {
             switch (inst.opcode) {
-                0b1101111 => {
+                0b1101111 => { // J/JAL
+                    // TESTED
                     // If rd = 0, the instruction is J. Otherwise, it's JAL
                     if (inst.rd != 0) {
                         cpuState.Registers[inst.rd] = cpuState.ProgramCounter + 4;
@@ -372,6 +422,94 @@ test "Execute ADD" {
 
     const actual1: i32 = @bitCast(cpuState.Registers[3]);
     try std.testing.expectEqual(-1, actual1); // Expect x3 = -1
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SUB" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Simple subtraction
+    cpuState.Registers[1] = 10; // x1 = 10
+    cpuState.Registers[2] = 4; // x2 = 4
+
+    // SUB x5, x1, x2
+    const sub1: DecodedInstruction = .{
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+    };
+
+    try execute(sub1, &cpuState, &memory);
+
+    try std.testing.expectEqual(6, cpuState.Registers[5]); // x5 = 6
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Subtract to zero
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 20; // x1 = 20
+    cpuState.Registers[2] = 20; // x2 = 20
+
+    // SUB x5, x1, x2
+    const sub2: DecodedInstruction = .{
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+    };
+
+    try execute(sub2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Subtract with negative result
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // SUB x5, x1, x2
+    const sub3: DecodedInstruction = .{
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+    };
+
+    try execute(sub3, &cpuState, &memory);
+
+    const actual3: i32 = @bitCast(cpuState.Registers[5]);
+    try std.testing.expectEqual(-5, actual3); // x5 = -5
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Subtract with large unsigned values (no underflow)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0xFFFFFFFF; // x1 = 0xFFFFFFFF (max unsigned)
+    cpuState.Registers[2] = 1; // x2 = 1
+
+    // SUB x5, x1, x2
+    const sub4: DecodedInstruction = .{
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+    };
+
+    try execute(sub4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFFFFFE, cpuState.Registers[5]); // x5 = 0xFFFFFFFE
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Subtract zero (identity)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 123456; // x1 = 123456
+    cpuState.Registers[2] = 0; // x2 = 0
+
+    // SUB x5, x1, x2
+    const sub5: DecodedInstruction = .{
+        .RType = .{ .opcode = 0b0110011, .funct3 = 0b000, .funct7 = 0b0100000, .rd = 5, .rs1 = 1, .rs2 = 2 },
+    };
+
+    try execute(sub5, &cpuState, &memory);
+
+    try std.testing.expectEqual(123456, cpuState.Registers[5]); // x5 = 123456
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 }
 
@@ -1586,4 +1724,659 @@ test "Execute AND" {
 
     try std.testing.expectEqual(0b00000000, cpuState.Registers[5]); // x5 = 0
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SLLI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Simple left shift
+    cpuState.Registers[1] = 0b00001111; // x1 = 15
+
+    // SLLI x5, x1, 2
+    const slli1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 2 },
+    };
+
+    try execute(slli1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0b00111100, cpuState.Registers[5]); // x5 = 60
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Shift by 0 (no change)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x12345678; // x1 = 0x12345678
+
+    // SLLI x5, x1, 0
+    const slli2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(slli2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x12345678, cpuState.Registers[5]); // x5 = unchanged
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Shift by 31 (maximum allowed by shamt)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // x1 = 1
+
+    // SLLI x5, x1, 31
+    const slli3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 31 },
+    };
+
+    try execute(slli3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x80000000, cpuState.Registers[5]); // x5 = 2^31
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Shift left by -1 (interpreted as 31 due to bit truncation)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // x1 = 1
+    const immNegative: i32 = -1;
+
+    // SLLI x5, x1, -1
+    const slli5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = @truncate(immNegative) },
+    };
+
+    try execute(slli5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x80000000, cpuState.Registers[5]); // x5 = 2^31
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SLTI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: rs1 < imm (positive comparison)
+    cpuState.Registers[1] = 10; // x1 = 10
+    const imm1: i32 = 20;
+
+    // SLTI x5, x1, 20
+    const slti1: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm1,
+        },
+    };
+
+    try execute(slti1, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (true)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: rs1 == imm
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 20; // x1 = 20
+    const imm2: i32 = 20;
+
+    // SLTI x5, x1, 20
+    const slti2: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm2,
+        },
+    };
+
+    try execute(slti2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0 (false)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: rs1 > imm
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 30; // x1 = 30
+    const imm3: i32 = 20;
+
+    // SLTI x5, x1, 20
+    const slti3: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm3,
+        },
+    };
+
+    try execute(slti3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0 (false)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: rs1 is negative, imm is positive
+    cpuState.ProgramCounter = 0x00000000;
+    const negRs1: i32 = -10;
+    cpuState.Registers[1] = @bitCast(negRs1); // x1 = -10
+    const imm4: i32 = 5;
+
+    // SLTI x5, x1, 5
+    const slti4: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm4,
+        },
+    };
+
+    try execute(slti4, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (true)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: rs1 is positive, imm is negative
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 10; // x1 = 10
+    const imm5: i32 = -20;
+
+    // SLTI x5, x1, -20
+    const slti5: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm5,
+        },
+    };
+
+    try execute(slti5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0 (false)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 6: rs1 and imm are negative
+    cpuState.ProgramCounter = 0x00000000;
+    const negImm6: i32 = -5;
+    const negRs16: i32 = -10;
+    cpuState.Registers[1] = @bitCast(negRs16); // x1 = -10
+
+    // SLTI x5, x1, -5
+    const slti6: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b010,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = negImm6,
+        },
+    };
+
+    try execute(slti6, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (true)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SLTIU" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: rs1 < imm (unsigned)
+    cpuState.Registers[1] = 10; // x1 = 10
+    const imm1: i32 = 20; // unsigned immediate
+
+    // SLTIU x5, x1, 20
+    const sltiu1: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b011,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm1,
+        },
+    };
+
+    try execute(sltiu1, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (true)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: rs1 == imm
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 20; // x1 = 20
+    const imm2: i32 = 20; // unsigned immediate
+
+    // SLTIU x5, x1, 20
+    const sltiu2: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b011,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm2,
+        },
+    };
+
+    try execute(sltiu2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0 (false)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: rs1 > imm (unsigned)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 30; // x1 = 30
+    const imm3: i32 = 20; // unsigned immediate
+
+    // SLTIU x5, x1, 20
+    const sltiu3: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b011,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = imm3,
+        },
+    };
+
+    try execute(sltiu3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0, cpuState.Registers[5]); // x5 = 0 (false)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Signed negative value treated as unsigned
+    const negImm: i32 = -1; // 0xFFFFFFFF in unsigned
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 1; // x1 = 1
+
+    // SLTIU x5, x1, -1
+    const sltiu4: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b011,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = negImm,
+        },
+    };
+
+    try execute(sltiu4, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (1 < 0xFFFFFFFF)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: rs1 = 0, imm = large unsigned value (within i32 range)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0; // x1 = 0
+    const largeImm: i32 = 0x7FFFFFFF; // Largest signed value
+
+    // SLTIU x5, x1, 0x7FFFFFFF
+    const sltiu5: DecodedInstruction = .{
+        .IType = .{
+            .opcode = 0b0010011,
+            .funct3 = 0b011,
+            .rd = 5,
+            .rs1 = 1,
+            .imm = largeImm,
+        },
+    };
+
+    try execute(sltiu5, &cpuState, &memory);
+
+    try std.testing.expectEqual(1, cpuState.Registers[5]); // x5 = 1 (0 < 0x7FFFFFFF)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute XORI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Simple XORI operation
+    cpuState.Registers[1] = 0b11001100; // x1 = 204
+    const imm1: i32 = 0b10101010;
+
+    // XORI x5, x1, 0b10101010
+    const xori1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = imm1 },
+    };
+
+    try execute(xori1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0b01100110, cpuState.Registers[5]); // x5 = 102
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: XORI with zero
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0xCAFEBABE; // x1 = 0xCAFEBABE
+    const imm2: i32 = 0;
+
+    // XORI x5, x1, 0
+    const xori2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = imm2 },
+    };
+
+    try execute(xori2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xCAFEBABE, cpuState.Registers[5]); // x5 = unchanged
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: XORI with all bits set
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x12345678; // x1 = 0x12345678
+    const imm3: i32 = -1; // 0xFFF in 12-bit two's complement is -1 (all bits set)
+
+    // XORI x5, x1, -1
+    const xori3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = imm3 },
+    };
+
+    try execute(xori3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xEDCBA987, cpuState.Registers[5]); // x5 = inverted bits
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: XORI with zero register (x1 = 0)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x0; // x1 = 0
+    const imm5: i32 = 0x3F; // Positive immediate
+
+    // XORI x5, x1, 0x3F
+    const xori5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = imm5 },
+    };
+
+    try execute(xori5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x3F, cpuState.Registers[5]); // x5 = 0x3F
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SRLI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Simple right shift
+    cpuState.Registers[1] = 0b11110000; // x1 = 240
+
+    // SRLI x5, x1, 4
+    const srli1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 4 },
+    };
+
+    try execute(srli1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0b00001111, cpuState.Registers[5]); // x5 = 15
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Shift by 0 (no change)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x12345678; // x1 = 0x12345678
+
+    // SRLI x5, x1, 0
+    const srli2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(srli2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x12345678, cpuState.Registers[5]); // x5 = unchanged
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Shift larger than 32 bits (only lower 5 bits of imm used)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x80000000; // x1 = 0x80000000
+
+    // SRLI x5, x1, 35 (35 & 0b11111 = 3)
+    const srli3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 35 },
+    };
+
+    try execute(srli3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x10000000, cpuState.Registers[5]); // x5 = 0x10000000
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Shift all bits out
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0xFFFFFFFF; // x1 = all bits set
+
+    // SRLI x5, x1, 32 (32 & 0b11111 = 0)
+    const srli4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 32 },
+    };
+
+    try execute(srli4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFFFFFF, cpuState.Registers[5]); // x5 = unchanged
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Edge case: Input with alternating bits
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0xAAAAAAAA; // x1 = alternating bits
+
+    // SRLI x5, x1, 1
+    const srli5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 1 },
+    };
+
+    try execute(srli5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x55555555, cpuState.Registers[5]); // x5 = shifted right
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute ORI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Simple ORI
+    cpuState.Registers[1] = 0b11001100; // x1 = 204
+    const imm1: i32 = 0b10101010;
+
+    // ORI x5, x1, 0b10101010
+    const ori1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b110, .rd = 5, .rs1 = 1, .imm = imm1 },
+    };
+
+    try execute(ori1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0b11101110, cpuState.Registers[5]); // x5 = 238
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: ORI with zero
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0xCAFEBABE; // x1 = 0xCAFEBABE
+    const imm2: i32 = 0;
+
+    // ORI x5, x1, 0
+    const ori2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b110, .rd = 5, .rs1 = 1, .imm = imm2 },
+    };
+
+    try execute(ori2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xCAFEBABE, cpuState.Registers[5]); // x5 = unchanged
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: ORI with all bits set in immediate
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x12345678; // x1 = 0x12345678
+    const imm3: i32 = -1; // Immediate = 0xFFFFFFFF
+
+    // ORI x5, x1, -1
+    const ori3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b110, .rd = 5, .rs1 = 1, .imm = imm3 },
+    };
+
+    try execute(ori3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFFFFFF, cpuState.Registers[5]); // x5 = all bits set
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: ORI with a negative immediate
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0b11110000; // x1 = 240
+    const imm4: i32 = -16; // Immediate = 0xFFFFFFF0
+
+    // ORI x5, x1, -16
+    const ori4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b110, .rd = 5, .rs1 = 1, .imm = imm4 },
+    };
+
+    try execute(ori4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFFFFF0, cpuState.Registers[5]); // x5 = OR with immediate
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: ORI with a positive immediate
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x0; // x1 = 0
+    const imm5: i32 = 0x7FF; // Immediate = maximum positive 12-bit
+
+    // ORI x5, x1, 0x7FF
+    const ori5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0010011, .funct3 = 0b110, .rd = 5, .rs1 = 1, .imm = imm5 },
+    };
+
+    try execute(ori5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x7FF, cpuState.Registers[5]); // x5 = 0x7FF
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute LB" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    // Initialize memory for tests
+    try memory.write8(0, 0x7F); // Address 0: 127 (positive signed byte)
+    try memory.write8(1, 0x80); // Address 1: -128 (negative signed byte)
+    try memory.write8(2, 0x01); // Address 2: 1
+    try memory.write8(3, 0xFF); // Address 3: -1
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Load a positive signed byte
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LB x5, 0(x1)
+    const lb1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lb1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x7F, cpuState.Registers[5]); // x5 = 127
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Load a negative signed byte
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // Base address in x1
+
+    // LB x5, 0(x1)
+    const lb2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lb2, &cpuState, &memory);
+
+    const actual2: i32 = @bitCast(cpuState.Registers[5]);
+    try std.testing.expectEqual(-128, actual2); // x5 = -128
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Load with non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LB x5, 2(x1)
+    const lb3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 2 },
+    };
+
+    try execute(lb3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x01, cpuState.Registers[5]); // x5 = 1
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Load from address with negative immediate
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000004; // Base address in x1
+    const imm4: i32 = -1;
+
+    // LB x5, -1(x1)
+    const lb4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = imm4 },
+    };
+
+    try execute(lb4, &cpuState, &memory);
+
+    const actual4: i32 = @bitCast(cpuState.Registers[5]);
+    try std.testing.expectEqual(-1, actual4); // x5 = -1
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Load with out-of-bound memory (should panic or error)
+    // cpuState.ProgramCounter = 0x00000000;
+    // cpuState.Registers[1] = 0x00000010; // Address beyond allocated memory
+
+    // // LB x5, 0(x1)
+    // const lb5: DecodedInstruction = .{
+    //     .IType = .{ .opcode = 0b0000011, .funct3 = 0b000, .rd = 5, .rs1 = 1, .imm = 0 },
+    // };
+
+    // try std.testing.expectPanic(@async execute(lb5, &cpuState, &memory)); // Expect panic on invalid access
 }
