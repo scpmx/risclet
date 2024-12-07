@@ -173,7 +173,25 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b001 => { // LH
-                            // UNTESTED
+                            // TESTED
+                            if (inst.rd != 0) {
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                                const address: u32 = @bitCast(rs1Value + inst.imm);
+
+                                if (address & 0b1 != 0) {
+                                    return error.MisalignedAddress;
+                                }
+
+                                const loadedU16 = try memory.read16(address);
+                                const u16AsWord = @as(u32, loadedU16);
+
+                                if (u16AsWord & 0x8000 != 0) {
+                                    const signedValue = 0xFFFF0000 | u16AsWord;
+                                    cpuState.Registers[inst.rd] = signedValue;
+                                } else {
+                                    cpuState.Registers[inst.rd] = u16AsWord;
+                                }
+                            }
                         },
                         0b010 => { // LW
                             // TESTED
@@ -190,10 +208,32 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b100 => { // LBU
-                            // UNTESTED
+                            // TESTED
+                            if (inst.rd != 0) {
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                                const address: u32 = @bitCast(rs1Value + inst.imm);
+
+                                const loadedByte = try memory.read8(address);
+                                const byteAsWord = @as(u32, loadedByte);
+
+                                cpuState.Registers[inst.rd] = byteAsWord;
+                            }
                         },
                         0b101 => { // LHU
-                            // UNTESTED
+                            // TESTED
+                            if (inst.rd != 0) {
+                                const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                                const address: u32 = @bitCast(rs1Value + inst.imm);
+
+                                if (address & 0b1 != 0) {
+                                    return error.MisalignedAddress;
+                                }
+
+                                const loadedU16 = try memory.read16(address);
+                                const u16AsWord = @as(u32, loadedU16);
+
+                                cpuState.Registers[inst.rd] = u16AsWord;
+                            }
                         },
                         else => return error.UnknownFunct3,
                     }
@@ -207,10 +247,21 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b0100011 => {
                     switch (inst.funct3) {
                         0b000 => { // SB
-                            // UNTESTED
+                            // TESTED
+                            const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                            const address: u32 = @intCast(rs1Value + inst.imm);
+                            try memory.write8(address, @truncate(cpuState.Registers[inst.rs2]));
                         },
                         0b001 => { // SH
-                            // UNTESTED
+                            // TESTED
+                            const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
+                            const address: u32 = @intCast(rs1Value + inst.imm);
+
+                            if (address & 0b1 != 0) {
+                                return error.MisalignedAddress;
+                            } else {
+                                try memory.write16(address, @truncate(cpuState.Registers[inst.rs2]));
+                            }
                         },
                         0b010 => { // SW
                             // TESTED
@@ -2369,6 +2420,7 @@ test "Execute LB" {
     try std.testing.expectEqual(-1, actual4); // x5 = -1
     try std.testing.expectEqual(4, cpuState.ProgramCounter);
 
+    // TODO: Test misalign error
     // Case 5: Load with out-of-bound memory (should panic or error)
     // cpuState.ProgramCounter = 0x00000000;
     // cpuState.Registers[1] = 0x00000010; // Address beyond allocated memory
@@ -2379,4 +2431,444 @@ test "Execute LB" {
     // };
 
     // try std.testing.expectPanic(@async execute(lb5, &cpuState, &memory)); // Expect panic on invalid access
+}
+
+test "Execute LH" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    // Initialize memory for tests
+    try memory.write16(0, 0x7FFF); // Address 0: 32767 (positive signed halfword)
+    try memory.write16(2, 0x8000); // Address 2: -32768 (negative signed halfword)
+    try memory.write16(4, 0x1234); // Address 4: 4660
+    try memory.write16(6, 0xFFFF); // Address 6: -1 (negative signed halfword)
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Load a positive signed halfword
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LH x5, 0(x1)
+    const lh1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lh1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x7FFF, cpuState.Registers[5]); // x5 = 32767
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Load a negative signed halfword
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000002; // Base address in x1
+
+    // LH x5, 0(x1)
+    const lh2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lh2, &cpuState, &memory);
+
+    const actual2: i32 = @bitCast(cpuState.Registers[5]);
+    try std.testing.expectEqual(-32768, actual2); // x5 = -32768
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Load with a non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LH x5, 4(x1)
+    const lh3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 4 },
+    };
+
+    try execute(lh3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x1234, cpuState.Registers[5]); // x5 = 4660
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Load a negative halfword and check sign-extension
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000006; // Base address in x1
+
+    // LH x5, 0(x1)
+    const lh4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lh4, &cpuState, &memory);
+
+    const actual4: i32 = @bitCast(cpuState.Registers[5]);
+    try std.testing.expectEqual(-1, actual4); // x5 = -1
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Misaligned address (should panic or error)
+    // cpuState.ProgramCounter = 0x00000000;
+    // cpuState.Registers[1] = 0x00000001; // Misaligned address in x1
+
+    // // LH x5, 0(x1)
+    // const lh5: DecodedInstruction = .{
+    //     .IType = .{ .opcode = 0b0000011, .funct3 = 0b001, .rd = 5, .rs1 = 1, .imm = 0 },
+    // };
+
+    // try std.testing.expectPanic(@async execute(lh5, &cpuState, &memory)); // Expect panic on misaligned access
+}
+
+test "Execute LBU" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    // Initialize memory for tests
+    try memory.write8(0, 0x80); // Address 0: 128 (unsigned byte)
+    try memory.write8(1, 0x7F); // Address 1: 127 (unsigned byte)
+    try memory.write8(2, 0xFF); // Address 2: 255 (unsigned byte)
+    try memory.write8(3, 0x00); // Address 3: 0 (unsigned byte)
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Load an unsigned byte
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LBU x5, 0(x1)
+    const lbu1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lbu1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000080, cpuState.Registers[5]); // x5 = 128
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Load a small unsigned byte
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // Base address in x1
+
+    // LBU x5, 0(x1)
+    const lbu2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lbu2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x0000007F, cpuState.Registers[5]); // x5 = 127
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Load a maximum unsigned byte
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000002; // Base address in x1
+
+    // LBU x5, 0(x1)
+    const lbu3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lbu3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x000000FF, cpuState.Registers[5]); // x5 = 255
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Load a zero byte
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000003; // Base address in x1
+
+    // LBU x5, 0(x1)
+    const lbu4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lbu4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000000, cpuState.Registers[5]); // x5 = 0
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Load with a non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // Base address in x1
+
+    // LBU x5, 1(x1)
+    const lbu5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b100, .rd = 5, .rs1 = 1, .imm = 1 },
+    };
+
+    try execute(lbu5, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x000000FF, cpuState.Registers[5]); // x5 = 255 (address 2)
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute LHU" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    // Initialize memory for tests
+    try memory.write16(0, 0x7FFF); // Address 0: 32767 (positive unsigned halfword)
+    try memory.write16(2, 0x8000); // Address 2: 32768 (unsigned)
+    try memory.write16(4, 0xFFFF); // Address 4: 65535 (all bits set)
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Load a positive unsigned halfword
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+
+    // LHU x5, 0(x1)
+    const lhu1: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lhu1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x7FFF, cpuState.Registers[5]); // x5 = 32767
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Load an unsigned halfword with high bit set
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000002; // Base address in x1
+
+    // LHU x5, 0(x1)
+    const lhu2: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lhu2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x8000, cpuState.Registers[5]); // x5 = 32768
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Load all bits set (maximum unsigned halfword)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000004; // Base address in x1
+
+    // LHU x5, 0(x1)
+    const lhu3: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    try execute(lhu3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFF, cpuState.Registers[5]); // x5 = 65535
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Load with non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000001; // Base address in x1
+
+    // LHU x5, 3(x1) -> Address = 1 + 3 = 4
+    const lhu4: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 3 },
+    };
+
+    try execute(lhu4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFF, cpuState.Registers[5]); // x5 = 65535
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Load from unaligned address (should work for `LHU`)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000003; // Base address in x1
+
+    // LHU x5, 0(x1) -> Address = 3
+    const lhu5: DecodedInstruction = .{
+        .IType = .{ .opcode = 0b0000011, .funct3 = 0b101, .rd = 5, .rs1 = 1, .imm = 0 },
+    };
+
+    const err = execute(lhu5, &cpuState, &memory);
+
+    try std.testing.expectError(error.MisalignedAddress, err);
+    // TODO: Should PC increment if misaligned memory access error occurs?
+    //try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute SB" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Store a positive byte
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+    cpuState.Registers[2] = 0x0000007F; // Value to store in x2 (127)
+
+    // SB x2, 0(x1)
+    const sb1: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    };
+
+    try execute(sb1, &cpuState, &memory);
+
+    const storedByte1 = try memory.read8(0x00000000);
+    try std.testing.expectEqual(0x7F, storedByte1); // Expect 127 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Store a negative byte
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000004; // Base address in x1
+    const neg128: i32 = -128;
+    cpuState.Registers[2] = @bitCast(neg128); // Value to store in x2 (-128)
+
+    // SB x2, 0(x1)
+    const sb2: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    };
+
+    try execute(sb2, &cpuState, &memory);
+
+    const storedByte2 = try memory.read8(0x00000004);
+    try std.testing.expectEqual(0x80, storedByte2); // Expect 0x80 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Store with a non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+    cpuState.Registers[2] = 0x00000001; // Value to store in x2 (1)
+
+    // SB x2, 2(x1)
+    const sb3: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 2 },
+    };
+
+    try execute(sb3, &cpuState, &memory);
+
+    const storedByte3 = try memory.read8(0x00000002);
+    try std.testing.expectEqual(0x01, storedByte3); // Expect 1 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Store with a negative offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000008; // Base address in x1
+    cpuState.Registers[2] = 0x000000FF; // Value to store in x2 (255)
+
+    // SB x2, -4(x1)
+    const sb4: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = -4 },
+    };
+
+    try execute(sb4, &cpuState, &memory);
+
+    const storedByte4 = try memory.read8(0x00000004);
+    try std.testing.expectEqual(0xFF, storedByte4); // Expect 255 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Out-of-bound memory access (should panic or error)
+    // cpuState.ProgramCounter = 0x00000000;
+    // cpuState.Registers[1] = 0x00000010; // Address beyond allocated memory
+    // cpuState.Registers[2] = 0x12345678; // Value to store in x2
+
+    // // SB x2, 0(x1)
+    // const sb5: DecodedInstruction = .{
+    //     .SType = .{ .opcode = 0b0100011, .funct3 = 0b000, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    // };
+
+    // try std.testing.expectPanic(@async execute(sb5, &cpuState, &memory)); // Expect panic on invalid access
+}
+
+test "Execute SH" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Store a positive halfword
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+    cpuState.Registers[2] = 0x00007FFF; // Value to store in x2 (32767)
+
+    // SH x2, 0(x1)
+    const sh1: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    };
+
+    try execute(sh1, &cpuState, &memory);
+
+    const storedHalf1 = try memory.read16(0x00000000);
+    try std.testing.expectEqual(0x7FFF, storedHalf1); // Expect 32767 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Store a negative halfword
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000004; // Base address in x1
+    cpuState.Registers[2] = 0xFFFFFFFF; // Value to store in x2 (-1, 0xFFFF)
+
+    // SH x2, 0(x1)
+    const sh2: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    };
+
+    try execute(sh2, &cpuState, &memory);
+
+    const storedHalf2 = try memory.read16(0x00000004);
+    try std.testing.expectEqual(0xFFFF, storedHalf2); // Expect 0xFFFF in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Store with a non-zero offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000000; // Base address in x1
+    cpuState.Registers[2] = 0x00001234; // Value to store in x2 (4660)
+
+    // SH x2, 6(x1)
+    const sh3: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 6 },
+    };
+
+    try execute(sh3, &cpuState, &memory);
+
+    const storedHalf3 = try memory.read16(0x00000006);
+    try std.testing.expectEqual(0x1234, storedHalf3); // Expect 4660 in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Store with a negative offset
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x00000008; // Base address in x1
+    cpuState.Registers[2] = 0xABCD; // Value to store in x2
+
+    // SH x2, -2(x1)
+    const sh4: DecodedInstruction = .{
+        .SType = .{ .opcode = 0b0100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = -2 },
+    };
+
+    try execute(sh4, &cpuState, &memory);
+
+    const storedHalf4 = try memory.read16(0x00000006);
+    try std.testing.expectEqual(0xABCD, storedHalf4); // Expect 0xABCD in memory
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 5: Out-of-bound memory access (should panic or error)
+    // cpuState.ProgramCounter = 0x00000000;
+    // cpuState.Registers[1] = 0x00000010; // Address beyond allocated memory
+    // cpuState.Registers[2] = 0x5678;     // Value to store in x2
+
+    // // SH x2, 0(x1)
+    // const sh5: DecodedInstruction = .{
+    //     .SType = .{ .opcode = 0b0100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    // };
+
+    // try std.testing.expectPanic(@async execute(sh5, &cpuState, &memory)); // Expect panic on invalid access
 }

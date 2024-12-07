@@ -27,6 +27,26 @@ pub const Memory = struct {
         self.buffer[address] = value;
     }
 
+    pub fn read16(self: *const Memory, address: usize) !u16 {
+        if (address + 1 > self.size) {
+            return error.OutOfBounds;
+        }
+
+        const b0 = self.buffer[address + 0];
+        const b1 = self.buffer[address + 1];
+
+        return @as(u16, b0) << 8 | @as(u16, b1);
+    }
+
+    pub fn write16(self: *Memory, address: usize, value: u16) !void {
+        if (address + 1 > self.size) {
+            return error.OutOfBounds;
+        }
+
+        self.buffer[address + 0] = @truncate(value >> 8);
+        self.buffer[address + 1] = @truncate(value);
+    }
+
     pub fn read32(self: *const Memory, address: usize) !u32 {
         if (address + 3 > self.size) {
             return error.OutOfBounds;
@@ -52,7 +72,7 @@ pub const Memory = struct {
     }
 };
 
-test "write then read u8" {
+test "write then read 8" {
     const allocator = std.testing.allocator;
 
     var memory = try Memory.init(allocator, 256);
@@ -67,7 +87,22 @@ test "write then read u8" {
     try std.testing.expectEqual(expected, actual);
 }
 
-test "write then read u32" {
+test "write then read 16" {
+    const allocator = std.testing.allocator;
+
+    var memory = try Memory.init(allocator, 256);
+    defer memory.deinit(allocator);
+
+    const address = 0x10;
+    const expected = 42;
+
+    try memory.write16(address, expected);
+    const actual = try memory.read16(address);
+
+    try std.testing.expectEqual(expected, actual);
+}
+
+test "write then read 32" {
     const allocator = std.testing.allocator;
 
     var memory = try Memory.init(allocator, 256);
