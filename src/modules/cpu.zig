@@ -22,12 +22,10 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             0b000 => {
                                 switch (inst.funct7) {
                                     0b0000000 => { // ADD
-                                        // TESTED
                                         const value = @addWithOverflow(rs1Value, rs2Value);
                                         cpuState.Registers[inst.rd] = value[0];
                                     },
                                     0b0100000 => { // SUB
-                                        // TESTED
                                         const value = @subWithOverflow(rs1Value, rs2Value);
                                         cpuState.Registers[inst.rd] = value[0];
                                     },
@@ -35,12 +33,10 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b001 => { // SLL
-                                // TESTED
                                 const shiftAmount: u5 = @truncate(rs2Value);
                                 cpuState.Registers[inst.rd] = rs1Value << shiftAmount;
                             },
                             0b010 => { // SLT
-                                // TESTED
                                 const rs1Signed: i32 = @bitCast(rs1Value);
                                 const rs2Signed: i32 = @bitCast(rs2Value);
                                 if (rs1Signed < rs2Signed) {
@@ -50,7 +46,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b011 => { // SLTU
-                                // TESTED
                                 if (rs1Value < rs2Value) {
                                     cpuState.Registers[inst.rd] = 1;
                                 } else {
@@ -58,18 +53,15 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b100 => { // XOR
-                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value ^ rs2Value;
                             },
                             0b101 => {
                                 switch (inst.funct7) {
                                     0b0000000 => { // SRL
-                                        // TESTED
                                         const shiftAmount: u5 = @truncate(rs2Value);
                                         cpuState.Registers[inst.rd] = rs1Value >> shiftAmount;
                                     },
                                     0b0100000 => { // SRA
-                                        // TESTED
                                         const shiftAmount: u5 = @truncate(rs2Value);
                                         const signedRs1Value: i32 = @bitCast(rs1Value);
                                         const result: i32 = signedRs1Value >> shiftAmount;
@@ -79,11 +71,9 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b110 => { // OR
-                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value | rs2Value;
                             },
                             0b111 => { // AND
-                                // TESTED
                                 cpuState.Registers[inst.rd] = rs1Value & rs2Value;
                             },
                         }
@@ -100,19 +90,16 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                         const rs1Value = cpuState.Registers[inst.rs1];
                         switch (inst.funct3) {
                             0b000 => { // ADDI
-                                // TESTED
                                 const rs1Signed: i32 = @bitCast(rs1Value);
                                 const newValue = @addWithOverflow(rs1Signed, inst.imm);
                                 cpuState.Registers[inst.rd] = @bitCast(newValue[0]);
                             },
                             0b001 => { // SLLI
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 const shiftAmount: u5 = @truncate(immUnsigned);
                                 cpuState.Registers[inst.rd] = rs1Value << shiftAmount;
                             },
                             0b010 => { // SLTI
-                                // TESTED
                                 const rs1Signed: i32 = @bitCast(rs1Value);
                                 if (rs1Signed < inst.imm) {
                                     cpuState.Registers[inst.rd] = 1;
@@ -121,7 +108,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b011 => { // SLTIU
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 if (rs1Value < immUnsigned) {
                                     cpuState.Registers[inst.rd] = 1;
@@ -130,23 +116,19 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 }
                             },
                             0b100 => { // XORI
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value ^ immUnsigned;
                             },
                             0b101 => { // SRLI
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 const shiftAmount: u5 = @truncate(immUnsigned);
                                 cpuState.Registers[inst.rd] = rs1Value >> shiftAmount;
                             },
                             0b110 => { // ORI
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value | immUnsigned;
                             },
                             0b111 => { // ANDI
-                                // TESTED
                                 const immUnsigned: u32 = @bitCast(inst.imm);
                                 cpuState.Registers[inst.rd] = rs1Value & immUnsigned;
                             },
@@ -156,7 +138,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b0000011 => {
                     switch (inst.funct3) {
                         0b000 => { // LB
-                            // TESTED
                             if (inst.rd != 0) {
                                 const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address: u32 = @bitCast(rs1Value + inst.imm);
@@ -173,7 +154,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b001 => { // LH
-                            // TESTED
                             if (inst.rd != 0) {
                                 const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address: u32 = @bitCast(rs1Value + inst.imm);
@@ -194,7 +174,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b010 => { // LW
-                            // TESTED
                             if (inst.rd != 0) {
                                 const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address = rs1Value + inst.imm;
@@ -208,7 +187,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b100 => { // LBU
-                            // TESTED
                             if (inst.rd != 0) {
                                 const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address: u32 = @bitCast(rs1Value + inst.imm);
@@ -220,7 +198,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b101 => { // LHU
-                            // TESTED
                             if (inst.rd != 0) {
                                 const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
                                 const address: u32 = @bitCast(rs1Value + inst.imm);
@@ -247,13 +224,11 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b0100011 => {
                     switch (inst.funct3) {
                         0b000 => { // SB
-                            // TESTED
                             const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
                             const address: u32 = @intCast(rs1Value + inst.imm);
                             try memory.write8(address, @truncate(cpuState.Registers[inst.rs2]));
                         },
                         0b001 => { // SH
-                            // TESTED
                             const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
                             const address: u32 = @intCast(rs1Value + inst.imm);
 
@@ -264,7 +239,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b010 => { // SW
-                            // TESTED
                             const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
                             const address: u32 = @intCast(rs1Value + inst.imm);
 
@@ -286,7 +260,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                 0b1100011 => {
                     switch (inst.funct3) {
                         0b000 => { // BEQ
-                            // TESTED
                             const rs1Value = cpuState.Registers[inst.rs1];
                             const rs2Value = cpuState.Registers[inst.rs2];
                             if (rs1Value == rs2Value and inst.imm != 0) {
@@ -298,19 +271,59 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b001 => { // BNE
-                            // UNTESTED
+                            const rs1Value = cpuState.Registers[inst.rs1];
+                            const rs2Value = cpuState.Registers[inst.rs2];
+                            if (rs1Value != rs2Value and inst.imm != 0) {
+                                const pcAsI32: i32 = @bitCast(cpuState.ProgramCounter);
+                                const nextPcValue = pcAsI32 + inst.imm;
+                                cpuState.ProgramCounter = @bitCast(nextPcValue);
+                            } else {
+                                cpuState.ProgramCounter += 4;
+                            }
                         },
                         0b100 => { // BLT
-                            // UNTESTED
+                            const rs1Signed: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                            const rs2Signed: i32 = @bitCast(cpuState.Registers[inst.rs2]);
+                            if (rs1Signed < rs2Signed and inst.imm != 0) {
+                                const pcAsI32: i32 = @bitCast(cpuState.ProgramCounter);
+                                const nextPcValue = pcAsI32 + inst.imm;
+                                cpuState.ProgramCounter = @bitCast(nextPcValue);
+                            } else {
+                                cpuState.ProgramCounter += 4;
+                            }
                         },
                         0b101 => { // BGE
-                            // UNTESTED
+                            const rs1Signed: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                            const rs2Signed: i32 = @bitCast(cpuState.Registers[inst.rs2]);
+                            if (rs1Signed >= rs2Signed and inst.imm != 0) {
+                                const pcAsI32: i32 = @bitCast(cpuState.ProgramCounter);
+                                const nextPcValue = pcAsI32 + inst.imm;
+                                cpuState.ProgramCounter = @bitCast(nextPcValue);
+                            } else {
+                                cpuState.ProgramCounter += 4;
+                            }
                         },
                         0b110 => { // BLTU
-                            // UNTESTED
+                            const rs1Value = cpuState.Registers[inst.rs1];
+                            const rs2Value = cpuState.Registers[inst.rs2];
+                            if (rs1Value < rs2Value and inst.imm != 0) {
+                                const pcAsI32: i32 = @bitCast(cpuState.ProgramCounter);
+                                const nextPcValue = pcAsI32 + inst.imm;
+                                cpuState.ProgramCounter = @bitCast(nextPcValue);
+                            } else {
+                                cpuState.ProgramCounter += 4;
+                            }
                         },
                         0b111 => { // BGEU
-                            // UNTESTED
+                            const rs1Value = cpuState.Registers[inst.rs1];
+                            const rs2Value = cpuState.Registers[inst.rs2];
+                            if (rs1Value >= rs2Value and inst.imm != 0) {
+                                const pcAsI32: i32 = @bitCast(cpuState.ProgramCounter);
+                                const nextPcValue = pcAsI32 + inst.imm;
+                                cpuState.ProgramCounter = @bitCast(nextPcValue);
+                            } else {
+                                cpuState.ProgramCounter += 4;
+                            }
                         },
                         else => return error.UnknownFunct3,
                     }
@@ -321,10 +334,16 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .UType => |inst| {
             switch (inst.opcode) {
                 0b0110111 => { // LUI
-                    // UNTESTED
+                    if (inst.rd != 0) {
+                        cpuState.Registers[inst.rd] = @bitCast(inst.imm << 12);
+                    }
                 },
                 0b0010111 => { // AUIPC
-                    // UNTESTED
+                    if (inst.rd != 0) {
+                        const immShifted: u32 = @bitCast(inst.imm << 12);
+                        const ret = @addWithOverflow(cpuState.ProgramCounter, immShifted);
+                        cpuState.Registers[inst.rd] = ret[0];
+                    }
                 },
                 else => return error.UnknownOpcode,
             }
@@ -333,7 +352,6 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .JType => |inst| {
             switch (inst.opcode) {
                 0b1101111 => { // J/JAL
-                    // TESTED
                     // If rd = 0, the instruction is J. Otherwise, it's JAL
                     if (inst.rd != 0) {
                         cpuState.Registers[inst.rd] = cpuState.ProgramCounter + 4;
@@ -348,6 +366,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
             switch (inst.opcode) {
                 0b1110011 => {
                     switch (inst.imm) {
+                        // Not tested as this is a sample implementation
                         0b00000 => { // ECALL
                             const syscallNumber = cpuState.Registers[17]; // a7 is 17 in RISC-V ABI
                             const arg0 = cpuState.Registers[10]; // a0 is x10 in RISC-V ABI
@@ -365,6 +384,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 },
                             }
                         },
+                        // Not tested
                         0b00001 => { // EBREAK
                         },
                         else => return error.UnknownImm,
@@ -2871,4 +2891,543 @@ test "Execute SH" {
     // };
 
     // try std.testing.expectPanic(@async execute(sh5, &cpuState, &memory)); // Expect panic on invalid access
+}
+
+test "Execute BNE" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Branch taken (values not equal)
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BNE x1, x2, 12
+    const bne1: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 12 },
+    };
+
+    try execute(bne1, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter); // PC should branch to 12
+
+    // Case 2: Branch not taken (values equal)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 15; // x1 = 15
+    cpuState.Registers[2] = 15; // x2 = 15
+
+    // BNE x1, x2, 8
+    const bne2: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 8 },
+    };
+
+    try execute(bne2, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 3: Negative immediate offset
+    cpuState.ProgramCounter = 0x00000010;
+    cpuState.Registers[1] = 25; // x1 = 25
+    cpuState.Registers[2] = 35; // x2 = 35
+    const imm3: i32 = -8;
+
+    // BNE x1, x2, -8
+    const bne3: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = imm3 },
+    };
+
+    try execute(bne3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000008, cpuState.ProgramCounter); // PC should branch to 8
+
+    // Case 4: Zero branch offset (should not branch)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 1; // x1 = 1
+    cpuState.Registers[2] = 2; // x2 = 2
+
+    // BNE x1, x2, 0
+    const bne4: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 0 },
+    };
+
+    try execute(bne4, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 5: Large positive immediate
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 100; // x1 = 100
+    cpuState.Registers[2] = 50; // x2 = 50
+
+    // BNE x1, x2, 2048
+    const bne5: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b001, .rs1 = 1, .rs2 = 2, .imm = 2048 },
+    };
+
+    try execute(bne5, &cpuState, &memory);
+
+    try std.testing.expectEqual(2048, cpuState.ProgramCounter); // PC should branch to 2048
+}
+
+test "Execute BLT" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Branch taken (rs1 < rs2)
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BLT x1, x2, 12
+    const blt1: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b100, .rs1 = 1, .rs2 = 2, .imm = 12 },
+    };
+
+    try execute(blt1, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter); // PC should branch to 12
+
+    // Case 2: Branch not taken (rs1 == rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 15; // x1 = 15
+    cpuState.Registers[2] = 15; // x2 = 15
+
+    // BLT x1, x2, 8
+    const blt2: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b100, .rs1 = 1, .rs2 = 2, .imm = 8 },
+    };
+
+    try execute(blt2, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 3: Branch not taken (rs1 > rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 20; // x1 = 20
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BLT x1, x2, 16
+    const blt3: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b100, .rs1 = 1, .rs2 = 2, .imm = 16 },
+    };
+
+    try execute(blt3, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 4: Branch taken (negative rs1 < positive rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    const neg5: i32 = -5;
+    cpuState.Registers[1] = @bitCast(neg5); // x1 = -5
+    cpuState.Registers[2] = 5; // x2 = 5
+
+    // BLT x1, x2, 20
+    const blt4: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b100, .rs1 = 1, .rs2 = 2, .imm = 20 },
+    };
+
+    try execute(blt4, &cpuState, &memory);
+
+    try std.testing.expectEqual(20, cpuState.ProgramCounter); // PC should branch to 20
+
+    // Case 5: Branch not taken (negative rs1 > negative rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    const neg10: i32 = -10;
+    cpuState.Registers[1] = @bitCast(neg5); // x1 = -5
+    cpuState.Registers[2] = @bitCast(neg10); // x2 = -10
+
+    // BLT x1, x2, -8
+    const blt5: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b100, .rs1 = 1, .rs2 = 2, .imm = -8 },
+    };
+
+    try execute(blt5, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+}
+
+test "Execute BGE" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Branch taken (rs1 > rs2)
+    cpuState.Registers[1] = 10; // x1 = 10
+    cpuState.Registers[2] = 5; // x2 = 5
+
+    // BGE x1, x2, 16
+    const bge1: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b101, .rs1 = 1, .rs2 = 2, .imm = 16 },
+    };
+
+    try execute(bge1, &cpuState, &memory);
+
+    try std.testing.expectEqual(16, cpuState.ProgramCounter); // PC should branch to 16
+
+    // Case 2: Branch taken (rs1 == rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 15; // x1 = 15
+    cpuState.Registers[2] = 15; // x2 = 15
+
+    // BGE x1, x2, 12
+    const bge2: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b101, .rs1 = 1, .rs2 = 2, .imm = 12 },
+    };
+
+    try execute(bge2, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter); // PC should branch to 12
+
+    // Case 3: Branch not taken (rs1 < rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BGE x1, x2, 8
+    const bge3: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b101, .rs1 = 1, .rs2 = 2, .imm = 8 },
+    };
+
+    try execute(bge3, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 4: Branch taken (negative rs1 >= negative rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    const neg5: i32 = -5;
+    const neg10: i32 = -10;
+    cpuState.Registers[1] = @bitCast(neg5); // x1 = -5
+    cpuState.Registers[2] = @bitCast(neg10); // x2 = -10
+
+    // BGE x1, x2, 20
+    const bge4: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b101, .rs1 = 1, .rs2 = 2, .imm = 20 },
+    };
+
+    try execute(bge4, &cpuState, &memory);
+
+    try std.testing.expectEqual(20, cpuState.ProgramCounter); // PC should branch to 20
+
+    // Case 5: Branch not taken (negative rs1 < positive rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    const neg15: i32 = -15;
+    cpuState.Registers[1] = @bitCast(neg15); // x1 = -15
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BGE x1, x2, -12
+    const bge5: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b101, .rs1 = 1, .rs2 = 2, .imm = -12 },
+    };
+
+    try execute(bge5, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+}
+
+test "Execute BLTU" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Branch taken (rs1 < rs2, unsigned)
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BLTU x1, x2, 12
+    const bltu1: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b110, .rs1 = 1, .rs2 = 2, .imm = 12 },
+    };
+
+    try execute(bltu1, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter); // PC should branch to 12
+
+    // Case 2: Branch not taken (rs1 == rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 15; // x1 = 15
+    cpuState.Registers[2] = 15; // x2 = 15
+
+    // BLTU x1, x2, 8
+    const bltu2: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b110, .rs1 = 1, .rs2 = 2, .imm = 8 },
+    };
+
+    try execute(bltu2, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 3: Branch not taken (rs1 > rs2, unsigned)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 20; // x1 = 20
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BLTU x1, x2, 16
+    const bltu3: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b110, .rs1 = 1, .rs2 = 2, .imm = 16 },
+    };
+
+    try execute(bltu3, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 4: Branch taken (rs1 < rs2, unsigned with wraparound)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 1; // x1 = 1
+    cpuState.Registers[2] = 0xFFFFFFFF; // x2 = max unsigned (4294967295)
+
+    // BLTU x1, x2, 20
+    const bltu4: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b110, .rs1 = 1, .rs2 = 2, .imm = 20 },
+    };
+
+    try execute(bltu4, &cpuState, &memory);
+
+    try std.testing.expectEqual(20, cpuState.ProgramCounter); // PC should branch to 20
+
+    // Case 5: Branch not taken (large unsigned rs1 >= small unsigned rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x80000000; // x1 = 2147483648 (unsigned)
+    cpuState.Registers[2] = 100; // x2 = 100 (unsigned)
+
+    // BLTU x1, x2, -8
+    const bltu5: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b110, .rs1 = 1, .rs2 = 2, .imm = -8 },
+    };
+
+    try execute(bltu5, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+}
+
+test "Execute BGEU" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Branch taken (rs1 > rs2, unsigned)
+    cpuState.Registers[1] = 20; // x1 = 20
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BGEU x1, x2, 16
+    const bgeu1: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b111, .rs1 = 1, .rs2 = 2, .imm = 16 },
+    };
+
+    try execute(bgeu1, &cpuState, &memory);
+
+    try std.testing.expectEqual(16, cpuState.ProgramCounter); // PC should branch to 16
+
+    // Case 2: Branch taken (rs1 == rs2, unsigned)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 15; // x1 = 15
+    cpuState.Registers[2] = 15; // x2 = 15
+
+    // BGEU x1, x2, 12
+    const bgeu2: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b111, .rs1 = 1, .rs2 = 2, .imm = 12 },
+    };
+
+    try execute(bgeu2, &cpuState, &memory);
+
+    try std.testing.expectEqual(12, cpuState.ProgramCounter); // PC should branch to 12
+
+    // Case 3: Branch not taken (rs1 < rs2, unsigned)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 5; // x1 = 5
+    cpuState.Registers[2] = 10; // x2 = 10
+
+    // BGEU x1, x2, 8
+    const bgeu3: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b111, .rs1 = 1, .rs2 = 2, .imm = 8 },
+    };
+
+    try execute(bgeu3, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+
+    // Case 4: Branch taken (large unsigned rs1 >= small unsigned rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 0x80000000; // x1 = 2147483648 (unsigned)
+    cpuState.Registers[2] = 100; // x2 = 100 (unsigned)
+
+    // BGEU x1, x2, 20
+    const bgeu4: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b111, .rs1 = 1, .rs2 = 2, .imm = 20 },
+    };
+
+    try execute(bgeu4, &cpuState, &memory);
+
+    try std.testing.expectEqual(20, cpuState.ProgramCounter); // PC should branch to 20
+
+    // Case 5: Branch not taken (small unsigned rs1 < large unsigned rs2)
+    cpuState.ProgramCounter = 0x00000000;
+    cpuState.Registers[1] = 1; // x1 = 1
+    cpuState.Registers[2] = 0xFFFFFFFF; // x2 = 4294967295 (unsigned)
+
+    // BGEU x1, x2, -8
+    const bgeu5: DecodedInstruction = .{
+        .BType = .{ .opcode = 0b1100011, .funct3 = 0b111, .rs1 = 1, .rs2 = 2, .imm = -8 },
+    };
+
+    try execute(bgeu5, &cpuState, &memory);
+
+    try std.testing.expectEqual(4, cpuState.ProgramCounter); // PC should move to next instruction
+}
+
+test "Execute LUI" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00000000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Load a positive immediate value
+    // LUI x5, 0x12345
+    const lui1: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0110111, .rd = 5, .imm = 0x12345 },
+    };
+
+    try execute(lui1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x12345000, cpuState.Registers[5]); // x5 = 0x12345000
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 2: Load a negative immediate value
+    cpuState.ProgramCounter = 0;
+
+    // LUI x6, -1 (0xFFFFF)
+    const lui2: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0110111, .rd = 6, .imm = 0xFFFFF },
+    };
+
+    try execute(lui2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0xFFFFF000, cpuState.Registers[6]); // x6 = 0xFFFFF000
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 3: Load with imm = 0
+    cpuState.ProgramCounter = 0;
+
+    // LUI x7, 0x0
+    const lui3: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0110111, .rd = 7, .imm = 0x0 },
+    };
+
+    try execute(lui3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000000, cpuState.Registers[7]); // x7 = 0x00000000
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+
+    // Case 4: Write to x0 (should remain 0)
+    cpuState.ProgramCounter = 0;
+
+    // LUI x0, 0x12345
+    const lui4: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0110111, .rd = 0, .imm = 0x12345 },
+    };
+
+    try execute(lui4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000000, cpuState.Registers[0]); // x0 = 0x00000000
+    try std.testing.expectEqual(4, cpuState.ProgramCounter);
+}
+
+test "Execute AUIPC" {
+    const alloc = std.testing.allocator;
+
+    var memory = try Memory.init(alloc, 16);
+    defer memory.deinit(alloc);
+
+    var cpuState: CPUState = .{
+        .ProgramCounter = 0x00001000,
+        .StackPointer = 0x00000000,
+        .Registers = [_]u32{0} ** 32,
+    };
+
+    // Case 1: Add a positive immediate value
+    // AUIPC x5, 0x12345
+    const auipc1: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0010111, .rd = 5, .imm = 0x12345 },
+    };
+
+    try execute(auipc1, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x12346000, cpuState.Registers[5]); // x5 = PC + 0x12345000 = 0x12346000
+    try std.testing.expectEqual(0x1004, cpuState.ProgramCounter);
+
+    // Case 2: Add a negative immediate value
+    // AUIPC x6, -1 (0xFFFFF)
+    cpuState.ProgramCounter = 0x00002000;
+    const auipc2: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0010111, .rd = 6, .imm = 0xFFFFF },
+    };
+
+    try execute(auipc2, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00001000, cpuState.Registers[6]); // x6 = PC + 0xFFFFF000 = 0x00001000
+    try std.testing.expectEqual(0x00002004, cpuState.ProgramCounter);
+
+    // Case 3: Add with imm = 0
+    // AUIPC x7, 0x0
+    cpuState.ProgramCounter = 0x00003000;
+    const auipc3: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0010111, .rd = 7, .imm = 0x0 },
+    };
+
+    try execute(auipc3, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00003000, cpuState.Registers[7]); // x7 = PC + 0x00000000 = 0x00003000
+    try std.testing.expectEqual(0x00003004, cpuState.ProgramCounter);
+
+    // Case 4: Write to x0 (should remain 0)
+    // AUIPC x0, 0x12345
+    cpuState.ProgramCounter = 0x00004000;
+    const auipc4: DecodedInstruction = .{
+        .UType = .{ .opcode = 0b0010111, .rd = 0, .imm = 0x12345 },
+    };
+
+    try execute(auipc4, &cpuState, &memory);
+
+    try std.testing.expectEqual(0x00000000, cpuState.Registers[0]); // x0 = 0 (unchanged)
+    try std.testing.expectEqual(0x00004004, cpuState.ProgramCounter);
 }
