@@ -1,4 +1,5 @@
 const std = @import("std");
+const encode = @import("./encoder.zig");
 
 pub const RawInstruction = u32;
 
@@ -268,7 +269,7 @@ test "decode b-type instruction" {
 }
 
 test "decode b-type instruction 2" {
-    const inst: RawInstruction = 0x00209463; // BLT x1, x2, -8
+    const inst: RawInstruction = encode.BLT(1, 2, -8);
     const instructionType = try decode(inst);
 
     switch (instructionType) {
@@ -276,7 +277,7 @@ test "decode b-type instruction 2" {
             try std.testing.expectEqual(0b1100011, b.opcode);
             try std.testing.expectEqual(1, b.rs1);
             try std.testing.expectEqual(2, b.rs2);
-            try std.testing.expectEqual(5, b.funct3);
+            try std.testing.expectEqual(4, b.funct3);
             try std.testing.expectEqual(-8, b.imm);
         },
         else => try std.testing.expect(false),

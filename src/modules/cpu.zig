@@ -6,7 +6,6 @@ const Memory = @import("./memory.zig").Memory;
 
 pub const CPUState = struct {
     ProgramCounter: u32,
-    StackPointer: u32,
     Registers: [32]u32,
 };
 
@@ -411,7 +410,7 @@ test "Execute ADD" {
     var memory = try Memory.init(alloc, 4);
     defer memory.deinit(alloc);
 
-    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .Registers = [_]u32{0} ** 32 };
 
     // Case 1: Simple addition (1 + 2 = 3)
     cpuState.Registers[1] = 1;
@@ -504,7 +503,6 @@ test "Execute SUB" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -592,7 +590,6 @@ test "Execute ADDI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -732,7 +729,6 @@ test "Execute LW" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -805,7 +801,6 @@ test "Execute SW" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -914,7 +909,6 @@ test "Execute BEQ" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -985,7 +979,6 @@ test "Execute J/JAL" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 12,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1042,7 +1035,7 @@ test "Execute SLT" {
     var memory = try Memory.init(alloc, 4);
     defer memory.deinit(alloc);
 
-    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .StackPointer = 0x00000000, .Registers = [_]u32{0} ** 32 };
+    var cpuState: CPUState = .{ .ProgramCounter = 0x00000000, .Registers = [_]u32{0} ** 32 };
 
     // Case 1: rs1 < rs2 (positive values)
     cpuState.Registers[1] = 1; // rs1
@@ -1133,7 +1126,6 @@ test "Execute ANDI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1220,7 +1212,6 @@ test "Execute OR" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1307,7 +1298,6 @@ test "Execute SLL" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1379,7 +1369,6 @@ test "Execute XOR" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1466,7 +1455,6 @@ test "Execute SLTU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1553,7 +1541,6 @@ test "Execute SRL" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1625,7 +1612,6 @@ test "Execute SRA" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1718,7 +1704,6 @@ test "Execute AND" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1805,7 +1790,6 @@ test "Execute SLLI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -1874,7 +1858,6 @@ test "Execute SLTI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2014,7 +1997,6 @@ test "Execute SLTIU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2131,7 +2113,6 @@ test "Execute XORI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2203,7 +2184,6 @@ test "Execute SRLI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2285,7 +2265,6 @@ test "Execute ORI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2378,7 +2357,6 @@ test "Execute LB" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2467,7 +2445,6 @@ test "Execute LH" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2554,7 +2531,6 @@ test "Execute LBU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2641,7 +2617,6 @@ test "Execute LHU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2724,7 +2699,6 @@ test "Execute SB" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2813,7 +2787,6 @@ test "Execute SH" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2901,7 +2874,6 @@ test "Execute BNE" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -2984,7 +2956,6 @@ test "Execute BLT" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -3068,7 +3039,6 @@ test "Execute BGE" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -3153,7 +3123,6 @@ test "Execute BLTU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -3235,7 +3204,6 @@ test "Execute BGEU" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -3317,7 +3285,6 @@ test "Execute LUI" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00000000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 
@@ -3380,7 +3347,6 @@ test "Execute AUIPC" {
 
     var cpuState: CPUState = .{
         .ProgramCounter = 0x00001000,
-        .StackPointer = 0x00000000,
         .Registers = [_]u32{0} ** 32,
     };
 

@@ -25,7 +25,7 @@ pub fn main() !void {
     try memory.write32(28, 0x00000513); // ADDI a0, x0, 0 # Corresponds to exit code 0
     try memory.write32(32, 0x00000073); // ECALL
 
-    var cpuState: cpu.CPUState = .{ .ProgramCounter = 0x0000, .StackPointer = 0x0000, .Registers = [_]u32{0} ** 32 };
+    var cpuState: cpu.CPUState = .{ .ProgramCounter = 0x0000, .Registers = [_]u32{0} ** 32 };
 
     while (true) {
         const err = tick(&cpuState, &memory);
