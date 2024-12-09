@@ -372,9 +372,13 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
 
                             switch (syscallNumber) {
                                 1 => { // Print integer
-                                    std.debug.print("ECALL: Print Integer - {d}\n", .{arg0});
+                                    std.debug.print("ECALL: Print Integer - {x}\n", .{arg0});
                                 },
-                                2 => { // Exit emulator
+                                2 => { // Print char
+                                    const ch: u8 = @truncate(arg0);
+                                    std.debug.print("{c}", .{ch});
+                                },
+                                3 => { // Exit emulator
                                     std.debug.print("ECALL: Exit with code {d}\n", .{arg0});
                                     std.process.exit(@intCast(arg0));
                                 },
