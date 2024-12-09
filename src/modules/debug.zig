@@ -5,7 +5,7 @@ const RawInstruction = instruction.RawInstruction;
 const Memory = @import("./memory.zig").Memory;
 const CPUState = @import("./cpu.zig").CPUState;
 
-pub fn print(decodedInstruction: DecodedInstruction) !void {
+pub fn printInstruction(decodedInstruction: DecodedInstruction) !void {
     switch (decodedInstruction) {
         .RType => |inst| {
             switch (inst.opcode) {
@@ -96,19 +96,19 @@ pub fn print(decodedInstruction: DecodedInstruction) !void {
                 0b0000011 => {
                     switch (inst.funct3) {
                         0b000 => { // LB
-                            std.debug.print("LB {d}, {d}({d})\n", .{ inst.rd, inst.rs1, inst.imm });
+                            std.debug.print("LB x{d}, {d}(x{d})\n", .{ inst.rd, inst.imm, inst.rs1 });
                         },
                         0b001 => { // LH
-                            std.debug.print("LH {d}, {d}({d})\n", .{ inst.rd, inst.rs1, inst.imm });
+                            std.debug.print("LH x{d}, {d}(x{d})\n", .{ inst.rd, inst.imm, inst.rs1 });
                         },
                         0b010 => { // LW
-                            std.debug.print("LW {d}, {d}({d})\n", .{ inst.rd, inst.rs1, inst.imm });
+                            std.debug.print("LW x{d}, {d}(x{d})\n", .{ inst.rd, inst.imm, inst.rs1 });
                         },
                         0b100 => { // LBU
-                            std.debug.print("LBU {d}, {d}({d})\n", .{ inst.rd, inst.rs1, inst.imm });
+                            std.debug.print("LBU x{d}, {d}(x{d})\n", .{ inst.rd, inst.imm, inst.rs1 });
                         },
                         0b101 => { // LHU
-                            std.debug.print("LHB {d}, {d}({d})\n", .{ inst.rd, inst.rs1, inst.imm });
+                            std.debug.print("LHB x{d}, {d}(x{d})\n", .{ inst.rd, inst.imm, inst.rs1 });
                         },
                         else => {
                             std.debug.print("Unknown Instruction: {any}\n", .{decodedInstruction});
@@ -125,13 +125,13 @@ pub fn print(decodedInstruction: DecodedInstruction) !void {
                 0b0100011 => {
                     switch (inst.funct3) {
                         0b000 => { // SB
-                            std.debug.print("SB {d}, {d}({d})\n", .{ inst.rs2, inst.rs1, inst.imm });
+                            std.debug.print("SB x{d}, {d}(x{d})\n", .{ inst.rs2, inst.rs1, inst.imm });
                         },
                         0b001 => { // SH
-                            std.debug.print("LB {d}, {d}({d})\n", .{ inst.rs2, inst.rs1, inst.imm });
+                            std.debug.print("SH x{d}, {d}(x{d})\n", .{ inst.rs2, inst.rs1, inst.imm });
                         },
                         0b010 => { // SW
-                            std.debug.print("LB {d}, {d}({d})\n", .{ inst.rs2, inst.rs1, inst.imm });
+                            std.debug.print("SW x{d}, {d}(x{d})\n", .{ inst.rs2, inst.rs1, inst.imm });
                         },
                         else => {
                             std.debug.print("Unknown Instruction: {any}\n", .{decodedInstruction});
@@ -227,4 +227,8 @@ pub fn print(decodedInstruction: DecodedInstruction) !void {
             std.debug.print("FENCE.I\n", .{});
         },
     }
+}
+
+pub fn printCPU(cpuState: *const CPUState) void {
+    std.debug.print("PC: 0x{X}, Registers: {any}\n", .{ cpuState.ProgramCounter, cpuState.Registers });
 }

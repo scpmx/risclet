@@ -7,13 +7,16 @@ const deb = @import("./modules/debug.zig");
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
     const raw: ins.RawInstruction = try memory.read32(cpuState.ProgramCounter);
     const decodedInstruction = try ins.decode(raw);
+    // deb.printCPU(cpuState);
+    // try deb.printInstruction(decodedInstruction);
     try cpu.execute(decodedInstruction, cpuState, memory);
 }
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    var memory = try mem.Memory.init(allocator, 1024 * 1024);
+    const size = 1024 * 1024 * 256;
+    var memory = try mem.Memory.init(allocator, size);
     defer memory.deinit(allocator);
 
     // Open the file for reading
@@ -33,12 +36,14 @@ pub fn main() !void {
         return error.UnexpectedEOF;
     }
 
-    // Access the raw bytes
-    var idx = @as(u32, 0);
-    for (buffer) |byte| {
+    for (0..0x3F) |i| {
         // std.debug.print("Load byte {d}: {x}\n", .{ idx, byte });
-        try memory.write8(idx, byte);
-        idx += 1;
+        try memory.write8(i, buffer[i]);
+    }
+
+    for (0x40..0x4F) |i| {
+        // std.debug.print("Load byte {d}: {x}\n", .{ idx, byte });
+        try memory.write8(0x100000 + i, buffer[i]);
     }
 
     var cpuState: cpu.CPUState = .{ .ProgramCounter = 0x0000, .Registers = [_]u32{0} ** 32 };
