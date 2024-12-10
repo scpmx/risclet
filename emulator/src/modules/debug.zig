@@ -65,7 +65,7 @@ pub fn printInstruction(decodedInstruction: DecodedInstruction, address: usize) 
         .IType => |inst| {
             switch (inst.opcode) {
                 0b0010011 => {
-                    // const rs1Value = cpuState.Registers[inst.rs1];
+                    // const rs1Value = cpuState.gprs[inst.rs1];
                     switch (inst.funct3) {
                         0b000 => { // ADDI
                             std.debug.print("{X:0>8}: ADDI x{d}, x{d}, {d}\n", .{ address, inst.rd, inst.rs1, inst.imm });
@@ -240,5 +240,5 @@ pub fn printInstruction(decodedInstruction: DecodedInstruction, address: usize) 
 }
 
 pub fn printCPU(cpuState: *const CPUState) void {
-    std.debug.print("PC: 0x{X}, Registers: {any}\n", .{ cpuState.ProgramCounter, cpuState.Registers });
+    std.debug.print("PC: 0x{X}, gprs: {any}\n", .{ cpuState.pc, cpuState.gprs });
 }
