@@ -14,7 +14,7 @@ fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const size = 1024 * 1024 * 256;
+    const size = 1024 * 1024 * 1024;
     var memory = try mem.Memory.init(allocator, size);
     defer memory.deinit(allocator);
 
@@ -38,6 +38,8 @@ pub fn main() !void {
     const entry = try elf.load_elf(&memory, buffer);
 
     var cpuState: cpu.CPUState = .{ .ProgramCounter = entry, .Registers = [_]u32{0} ** 32 };
+
+    cpuState.Registers[2] = 0x000FFFFC;
 
     while (true) {
         try tick(&cpuState, &memory);

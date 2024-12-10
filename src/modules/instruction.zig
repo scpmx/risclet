@@ -76,7 +76,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                 },
             };
         },
-        0b0010011, 0b0000011 => { // I-Type
+        0b0010011, 0b0000011, 0b1100111 => { // I-Type
             return DecodedInstruction{
                 .IType = .{
                     .opcode = @truncate(rawInstruction & 0b1111111),
@@ -170,7 +170,10 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                 else => return error.UnknownFunc3,
             }
         },
-        else => return error.UnknownOpcode,
+        else => |_| {
+            std.debug.print("unknown instruction: {x}\n", .{rawInstruction});
+            return error.UnknownOpcode;
+        },
     }
 }
 
@@ -292,7 +295,7 @@ test "decode u-type instruction" {
         .UType => |u| {
             try std.testing.expectEqual(0b0110111, u.opcode);
             try std.testing.expectEqual(1, u.rd);
-            try std.testing.expectEqual(0x300000, u.imm);
+            try std.testing.expectEqual(0x30000, u.imm);
         },
         else => try std.testing.expect(false),
     }

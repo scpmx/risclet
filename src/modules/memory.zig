@@ -2,11 +2,12 @@ const std = @import("std");
 
 pub const Memory = struct {
     buffer: []u8,
-
     size: usize,
 
     pub fn init(allocator: std.mem.Allocator, size: usize) !Memory {
-        return Memory{ .buffer = try allocator.alloc(u8, size), .size = size };
+        const buffer = try allocator.alloc(u8, size);
+        @memset(buffer, 0);
+        return Memory{ .buffer = buffer, .size = size };
     }
 
     pub fn deinit(self: *Memory, allocator: std.mem.Allocator) void {

@@ -133,6 +133,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             },
                         }
                     }
+                    cpuState.ProgramCounter += 4;
                 },
                 0b0000011 => {
                     switch (inst.funct3) {
@@ -213,23 +214,36 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                         },
                         else => return error.UnknownFunct3,
                     }
+                    cpuState.ProgramCounter += 4;
+                },
+                0b1100111 => { // JALR
+                    if (inst.funct3 == 0) {
+                        const rs1Signed: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                        const target: u32 = @bitCast(rs1Signed + inst.imm);
+                        const aligned = target & 0xFFFFFFFE; // Clear LSB to ensure alignment
+                        if (inst.rd != 0) {
+                            cpuState.Registers[inst.rd] = cpuState.ProgramCounter + 4; // Save return address
+                        }
+                        cpuState.ProgramCounter = aligned;
+                    } else {
+                        return error.UnknownFunct3;
+                    }
                 },
                 else => return error.UnknownOpcode,
             }
-            cpuState.ProgramCounter += 4;
         },
         .SType => |inst| {
             switch (inst.opcode) {
                 0b0100011 => {
                     switch (inst.funct3) {
                         0b000 => { // SB
-                            const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
-                            const address: u32 = @intCast(rs1Value + inst.imm);
+                            const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                            const address: u32 = @bitCast(rs1Value + inst.imm);
                             try memory.write8(address, @truncate(cpuState.Registers[inst.rs2]));
                         },
                         0b001 => { // SH
-                            const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
-                            const address: u32 = @intCast(rs1Value + inst.imm);
+                            const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                            const address: u32 = @bitCast(rs1Value + inst.imm);
 
                             if (address & 0b1 != 0) {
                                 return error.MisalignedAddress;
@@ -238,8 +252,8 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                             }
                         },
                         0b010 => { // SW
-                            const rs1Value: i32 = @intCast(cpuState.Registers[inst.rs1]);
-                            const address: u32 = @intCast(rs1Value + inst.imm);
+                            const rs1Value: i32 = @bitCast(cpuState.Registers[inst.rs1]);
+                            const address: u32 = @bitCast(rs1Value + inst.imm);
 
                             if (address & 0b11 != 0) {
                                 return error.MisalignedAddress;
@@ -372,7 +386,7 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
 
                             switch (syscallNumber) {
                                 1 => { // Print integer
-                                    std.debug.print("ECALL: Print Integer - {x}\n", .{arg0});
+                                    std.debug.print("{d}\n", .{arg0});
                                 },
                                 2 => { // Print char
                                     const ch: u8 = @truncate(arg0);
@@ -384,11 +398,13 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                 },
                                 else => {
                                     std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
+                                    @breakpoint();
                                 },
                             }
                         },
                         // Not tested
                         0b00001 => { // EBREAK
+                            @breakpoint();
                         },
                         else => return error.UnknownImm,
                     }
