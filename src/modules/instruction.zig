@@ -124,7 +124,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                 .UType = .{
                     .opcode = @truncate(rawInstruction & 0b1111111),
                     .rd = @truncate((rawInstruction >> 7) & 0b11111),
-                    .imm = imm >> 8,
+                    .imm = imm >> 12,
                 },
             };
         },
