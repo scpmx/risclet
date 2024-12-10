@@ -393,8 +393,9 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
                                     std.debug.print("{c}", .{ch});
                                 },
                                 3 => { // Exit emulator
-                                    std.debug.print("ECALL: Exit with code {d}\n", .{arg0});
-                                    std.process.exit(@intCast(arg0));
+                                    const exitCode: u8 = @truncate(arg0);
+                                    std.debug.print("ECALL: Exit with code {d}\n", .{exitCode});
+                                    std.process.exit(exitCode);
                                 },
                                 else => {
                                     std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
