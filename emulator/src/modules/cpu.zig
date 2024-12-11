@@ -780,7 +780,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0xDEADBEEF; // Value to store in x2
 
     // SW x2, 4(x1)
-    const sw1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw1 = Instruction{ .value = encode.SW(2, 4, 1) };
 
     try execute(sw1, &cpuState, &memory);
 
@@ -795,7 +795,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0xCAFEBABE; // Value to store in x2
 
     // SW x2, 0(x1)
-    const sw2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw2 = Instruction{ .value = encode.SW(2, 0, 1) };
 
     try execute(sw2, &cpuState, &memory);
 
@@ -810,7 +810,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0xBADC0DE; // Value to store in x2
 
     // SW x2, -4(x1)
-    const sw3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw3 = Instruction{ .value = encode.SW(2, -4, 1) };
 
     try execute(sw3, &cpuState, &memory);
 
@@ -825,7 +825,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0x11111111; // First value to store in x2
 
     // SW x2, 0(x1)
-    const sw4a = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw4a = Instruction{ .value = encode.SW(2, 0, 1) };
 
     try execute(sw4a, &cpuState, &memory);
 
@@ -837,7 +837,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0x22222222; // Second value to store in x2
 
     // SW x2, 0(x1)
-    const sw4b = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw4b = Instruction{ .value = encode.SW(2, 0, 1) };
 
     try execute(sw4b, &cpuState, &memory);
 
@@ -852,7 +852,7 @@ test "Execute SW" {
     cpuState.gprs[2] = 0x55555555; // Value to store in x2
 
     // SW x2, 0(x1)
-    const sw5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sw5 = Instruction{ .value = encode.SW(2, 0, 1) };
 
     const err = execute(sw5, &cpuState, &memory);
 
@@ -873,7 +873,7 @@ test "Execute BEQ" {
     cpuState.gprs[2] = 5;
 
     // BEQ x1, x2, 12
-    const beq1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const beq1 = Instruction{ .value = encode.BEQ(1, 2, 12) };
 
     try execute(beq1, &cpuState, &memory);
 
@@ -885,7 +885,7 @@ test "Execute BEQ" {
     cpuState.gprs[2] = 20;
 
     // BEQ x1, x2, 12
-    const beq2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const beq2 = Instruction{ .value = encode.BEQ(1, 2, 12) };
 
     try execute(beq2, &cpuState, &memory);
 
@@ -897,7 +897,7 @@ test "Execute BEQ" {
     cpuState.gprs[2] = 0x1234;
 
     // BEQ x1, x2, -16
-    const beq3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const beq3 = Instruction{ .value = encode.BEQ(1, 2, -16) };
 
     try execute(beq3, &cpuState, &memory);
 
@@ -909,7 +909,7 @@ test "Execute BEQ" {
     cpuState.gprs[2] = 42;
 
     // BEQ x1, x2, 0
-    const beq4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const beq4 = Instruction{ .value = encode.BEQ(1, 2, 0) };
 
     try execute(beq4, &cpuState, &memory);
 
@@ -928,7 +928,7 @@ test "Execute J/JAL" {
     cpuState.pc = 12;
 
     // J 12
-    const j1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const j1 = Instruction{ .value = encode.JAL(0, 12) };
 
     try execute(j1, &cpuState, &memory);
 
@@ -939,7 +939,7 @@ test "Execute J/JAL" {
     cpuState.pc = 24;
 
     // J -16
-    const j2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const j2 = Instruction{ .value = encode.JAL(0, -16) };
 
     try execute(j2, &cpuState, &memory);
 
@@ -949,8 +949,8 @@ test "Execute J/JAL" {
     // Case 3: Forward jump with link (rd != 0)
     cpuState.pc = 16;
 
-    // J 12, link to x1
-    const j3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    // JAL  x1, 12
+    const j3 = Instruction{ .value = encode.JAL(1, 12) };
 
     try execute(j3, &cpuState, &memory);
 
@@ -960,8 +960,8 @@ test "Execute J/JAL" {
     // Case 4: Backward jump with link (rd != 0)
     cpuState.pc = 40;
 
-    // J -24, link to x2
-    const j4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    // JAL x2, -24
+    const j4 = Instruction{ .value = encode.JAL(2, -24) };
 
     try execute(j4, &cpuState, &memory);
 
@@ -982,7 +982,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt1 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt1, &cpuState, &memory);
 
@@ -995,7 +995,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = 5; // rs2
 
     // SLT x3, x1, x2
-    const slt2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt2 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt2, &cpuState, &memory);
 
@@ -1008,7 +1008,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt3 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt3, &cpuState, &memory);
 
@@ -1022,7 +1022,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = 2; // rs2
 
     // SLT x3, x1, x2
-    const slt4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt4 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt4, &cpuState, &memory);
 
@@ -1036,7 +1036,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = @bitCast(v1); // rs2
 
     // SLT x3, x1, x2
-    const slt5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt5 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt5, &cpuState, &memory);
 
@@ -1050,7 +1050,7 @@ test "Execute SLT" {
     cpuState.gprs[2] = @bitCast(v2); // rs2
 
     // SLT x3, x1, x2
-    const slt6 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slt6 = Instruction{ .value = encode.SLT(3, 1, 2) };
 
     try execute(slt6, &cpuState, &memory);
 
@@ -1070,7 +1070,7 @@ test "Execute ANDI" {
     cpuState.gprs[1] = 0b11011011; // x1 = 219
 
     // ANDI x5, x1, 0b11110000
-    const andi1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const andi1 = Instruction{ .value = encode.ANDI(5, 1, 0b11110000) };
 
     try execute(andi1, &cpuState, &memory);
 
@@ -1082,7 +1082,7 @@ test "Execute ANDI" {
     cpuState.gprs[1] = 0b11011011; // x1 = 219
 
     // ANDI x5, x1, 0
-    const andi2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const andi2 = Instruction{ .value = encode.ANDI(5, 1, 0) };
 
     try execute(andi2, &cpuState, &memory);
 
@@ -1094,7 +1094,7 @@ test "Execute ANDI" {
     cpuState.gprs[1] = 0xDEADBEEF; // x1 = 0xDEADBEEF
 
     // ANDI x5, x1, -1
-    const andi3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const andi3 = Instruction{ .value = encode.ANDI(5, 1, -1) };
 
     try execute(andi3, &cpuState, &memory);
 
@@ -1106,7 +1106,7 @@ test "Execute ANDI" {
     cpuState.gprs[1] = 0b10101010; // x1 = 170
 
     // ANDI x5, x1, -16
-    const andi4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const andi4 = Instruction{ .value = encode.ANDI(5, 1, -16) };
 
     try execute(andi4, &cpuState, &memory);
 
@@ -1118,7 +1118,7 @@ test "Execute ANDI" {
     cpuState.gprs[1] = 0x12345678; // x1 = 0x12345678
 
     // ANDI x5, x1, 0x7FF
-    const andi5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const andi5 = Instruction{ .value = encode.ANDI(5, 1, 0x7FF) };
 
     try execute(andi5, &cpuState, &memory);
 
@@ -1139,7 +1139,7 @@ test "Execute OR" {
     cpuState.gprs[2] = 0b10101010; // x2 = 170
 
     // OR x5, x1, x2
-    const or1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const or1 = Instruction{ .value = encode.OR(5, 1, 2) };
 
     try execute(or1, &cpuState, &memory);
 
@@ -1152,7 +1152,7 @@ test "Execute OR" {
     cpuState.gprs[2] = 0xCAFEBABE; // x2 = 0xCAFEBABE
 
     // OR x5, x1, x2
-    const or2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const or2 = Instruction{ .value = encode.OR(5, 1, 2) };
 
     try execute(or2, &cpuState, &memory);
 
@@ -1165,7 +1165,7 @@ test "Execute OR" {
     cpuState.gprs[2] = 0x12345678; // x2 = 0x12345678
 
     // OR x5, x1, x2
-    const or3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const or3 = Instruction{ .value = encode.OR(5, 1, 2) };
 
     try execute(or3, &cpuState, &memory);
 
@@ -1178,7 +1178,7 @@ test "Execute OR" {
     cpuState.gprs[2] = 0b01110110; // x2 = 118
 
     // OR x5, x1, x2
-    const or4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const or4 = Instruction{ .value = encode.OR(5, 1, 2) };
 
     try execute(or4, &cpuState, &memory);
 
@@ -1191,7 +1191,7 @@ test "Execute OR" {
     cpuState.gprs[2] = 0x55555555; // x2 = same value
 
     // OR x5, x1, x2
-    const or5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const or5 = Instruction{ .value = encode.OR(5, 1, 2) };
 
     try execute(or5, &cpuState, &memory);
 
@@ -1212,7 +1212,7 @@ test "Execute SLL" {
     cpuState.gprs[2] = 2; // x2 = shift amount = 2
 
     // SLL x5, x1, x2
-    const sll1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sll1 = Instruction{ .value = encode.SLL(5, 1, 2) };
 
     try execute(sll1, &cpuState, &memory);
 
@@ -1225,7 +1225,7 @@ test "Execute SLL" {
     cpuState.gprs[2] = 0; // x2 = shift amount = 0
 
     // SLL x5, x1, x2
-    const sll2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sll2 = Instruction{ .value = encode.SLL(5, 1, 2) };
 
     try execute(sll2, &cpuState, &memory);
 
@@ -1238,7 +1238,7 @@ test "Execute SLL" {
     cpuState.gprs[2] = 35; // x2 = shift amount = 35 (35 & 0b11111 = 3)
 
     // SLL x5, x1, x2
-    const sll3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sll3 = Instruction{ .value = encode.SLL(5, 1, 2) };
 
     try execute(sll3, &cpuState, &memory);
 
@@ -1251,7 +1251,7 @@ test "Execute SLL" {
     cpuState.gprs[2] = 1; // x2 = shift amount = 1
 
     // SLL x5, x1, x2
-    const sll5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sll5 = Instruction{ .value = encode.SLL(5, 1, 2) };
 
     try execute(sll5, &cpuState, &memory);
 
@@ -1272,7 +1272,7 @@ test "Execute XOR" {
     cpuState.gprs[2] = 0b10101010; // x2 = 170
 
     // XOR x5, x1, x2
-    const xor1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xor1 = Instruction{ .value = encode.XOR(5, 1, 2) };
 
     try execute(xor1, &cpuState, &memory);
 
@@ -1285,7 +1285,7 @@ test "Execute XOR" {
     cpuState.gprs[2] = 0x0; // x2 = 0
 
     // XOR x5, x1, x2
-    const xor2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xor2 = Instruction{ .value = encode.XOR(5, 1, 2) };
 
     try execute(xor2, &cpuState, &memory);
 
@@ -1298,7 +1298,7 @@ test "Execute XOR" {
     cpuState.gprs[2] = 0xFFFFFFFF; // x2 = all bits set
 
     // XOR x5, x1, x2
-    const xor3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xor3 = Instruction{ .value = encode.XOR(5, 1, 2) };
 
     try execute(xor3, &cpuState, &memory);
 
@@ -1311,7 +1311,7 @@ test "Execute XOR" {
     cpuState.gprs[2] = 0x55555555; // x2 = same value
 
     // XOR x5, x1, x2
-    const xor4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xor4 = Instruction{ .value = encode.XOR(5, 1, 2) };
 
     try execute(xor4, &cpuState, &memory);
 
@@ -1324,7 +1324,7 @@ test "Execute XOR" {
     cpuState.gprs[2] = 0b00001111; // x2 = 15
 
     // XOR x5, x1, x2
-    const xor5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xor5 = Instruction{ .value = encode.XOR(5, 1, 2) };
 
     try execute(xor5, &cpuState, &memory);
 
@@ -1345,7 +1345,7 @@ test "Execute SLTU" {
     cpuState.gprs[2] = 20; // x2 = 20
 
     // SLTU x5, x1, x2
-    const sltu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltu1 = Instruction{ .value = encode.SLTU(5, 1, 2) };
 
     try execute(sltu1, &cpuState, &memory);
 
@@ -1358,7 +1358,7 @@ test "Execute SLTU" {
     cpuState.gprs[2] = 20; // x2 = 20
 
     // SLTU x5, x1, x2
-    const sltu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltu2 = Instruction{ .value = encode.SLTU(5, 1, 2) };
 
     try execute(sltu2, &cpuState, &memory);
 
@@ -1371,7 +1371,7 @@ test "Execute SLTU" {
     cpuState.gprs[2] = 20; // x2 = 20
 
     // SLTU x5, x1, x2
-    const sltu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltu3 = Instruction{ .value = encode.SLTU(5, 1, 2) };
 
     try execute(sltu3, &cpuState, &memory);
 
@@ -1384,7 +1384,7 @@ test "Execute SLTU" {
     cpuState.gprs[2] = 0xFFFFFFFF; // (-1 as unsigned)
 
     // SLTU x5, x1, x2
-    const sltu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltu4 = Instruction{ .value = encode.SLTU(5, 1, 2) };
 
     try execute(sltu4, &cpuState, &memory);
 
@@ -1397,7 +1397,7 @@ test "Execute SLTU" {
     cpuState.gprs[2] = 0x80000000; // x2 = 2^31 (large unsigned value)
 
     // SLTU x5, x1, x2
-    const sltu5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltu5 = Instruction{ .value = encode.SLTU(5, 1, 2) };
 
     try execute(sltu5, &cpuState, &memory);
 
@@ -1418,7 +1418,7 @@ test "Execute SRL" {
     cpuState.gprs[2] = 4; // x2 = shift amount = 4
 
     // SRL x5, x1, x2
-    const srl1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srl1 = Instruction{ .value = encode.SRL(5, 1, 2) };
 
     try execute(srl1, &cpuState, &memory);
 
@@ -1431,7 +1431,7 @@ test "Execute SRL" {
     cpuState.gprs[2] = 0; // x2 = shift amount = 0
 
     // SRL x5, x1, x2
-    const srl2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srl2 = Instruction{ .value = encode.SRL(5, 1, 2) };
 
     try execute(srl2, &cpuState, &memory);
 
@@ -1444,7 +1444,7 @@ test "Execute SRL" {
     cpuState.gprs[2] = 35; // x2 = shift amount = 35 (35 & 0b11111 = 3)
 
     // SRL x5, x1, x2
-    const srl3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srl3 = Instruction{ .value = encode.SRL(5, 1, 2) };
 
     try execute(srl3, &cpuState, &memory);
 
@@ -1457,7 +1457,7 @@ test "Execute SRL" {
     cpuState.gprs[2] = 1; // x2 = shift amount = 1
 
     // SRL x5, x1, x2
-    const srl5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srl5 = Instruction{ .value = encode.SRL(5, 1, 2) };
 
     try execute(srl5, &cpuState, &memory);
 
@@ -1478,7 +1478,7 @@ test "Execute SRA" {
     cpuState.gprs[2] = 3; // x2 = shift amount = 3
 
     // SRA x5, x1, x2
-    const sra1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sra1 = Instruction{ .value = encode.SRA(5, 1, 2) };
 
     try execute(sra1, &cpuState, &memory);
 
@@ -1492,7 +1492,7 @@ test "Execute SRA" {
     cpuState.gprs[2] = 3; // x2 = shift amount = 3
 
     // SRA x5, x1, x2
-    const sra2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sra2 = Instruction{ .value = encode.SRA(5, 1, 2) };
 
     try execute(sra2, &cpuState, &memory);
 
@@ -1507,7 +1507,7 @@ test "Execute SRA" {
     cpuState.gprs[2] = 0; // x2 = shift amount = 0
 
     // SRA x5, x1, x2
-    const sra3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sra3 = Instruction{ .value = encode.SRA(5, 1, 2) };
 
     try execute(sra3, &cpuState, &memory);
 
@@ -1521,7 +1521,7 @@ test "Execute SRA" {
     cpuState.gprs[2] = 33; // x2 = shift amount = 33 (33 & 0b11111 = 1)
 
     // SRA x5, x1, x2
-    const sra4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sra4 = Instruction{ .value = encode.SRA(5, 1, 2) };
 
     try execute(sra4, &cpuState, &memory);
 
@@ -1536,7 +1536,7 @@ test "Execute SRA" {
     cpuState.gprs[2] = 31; // x2 = shift amount = 31
 
     // SRA x5, x1, x2
-    const sra5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sra5 = Instruction{ .value = encode.SRA(5, 1, 2) };
 
     try execute(sra5, &cpuState, &memory);
 
@@ -1557,7 +1557,7 @@ test "Execute AND" {
     cpuState.gprs[2] = 0b10101010; // x2 = 170
 
     // AND x5, x1, x2
-    const and1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const and1 = Instruction{ .value = encode.AND(5, 1, 2) };
 
     try execute(and1, &cpuState, &memory);
 
@@ -1570,7 +1570,7 @@ test "Execute AND" {
     cpuState.gprs[2] = 0x0; // x2 = 0
 
     // AND x5, x1, x2
-    const and2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const and2 = Instruction{ .value = encode.AND(5, 1, 2) };
 
     try execute(and2, &cpuState, &memory);
 
@@ -1583,7 +1583,7 @@ test "Execute AND" {
     cpuState.gprs[2] = 0xFFFFFFFF; // x2 = all bits set
 
     // AND x5, x1, x2
-    const and3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const and3 = Instruction{ .value = encode.AND(5, 1, 2) };
 
     try execute(and3, &cpuState, &memory);
 
@@ -1596,7 +1596,7 @@ test "Execute AND" {
     cpuState.gprs[2] = 0x55555555; // x2 = same value
 
     // AND x5, x1, x2
-    const and4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const and4 = Instruction{ .value = encode.AND(5, 1, 2) };
 
     try execute(and4, &cpuState, &memory);
 
@@ -1609,7 +1609,7 @@ test "Execute AND" {
     cpuState.gprs[2] = 0b00001111; // x2 = 15
 
     // AND x5, x1, x2
-    const and5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const and5 = Instruction{ .value = encode.AND(5, 1, 2) };
 
     try execute(and5, &cpuState, &memory);
 
@@ -1629,7 +1629,7 @@ test "Execute SLLI" {
     cpuState.gprs[1] = 0b00001111; // x1 = 15
 
     // SLLI x5, x1, 2
-    const slli1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slli1 = Instruction{ .value = encode.SLLI(5, 1, 2) };
 
     try execute(slli1, &cpuState, &memory);
 
@@ -1641,7 +1641,7 @@ test "Execute SLLI" {
     cpuState.gprs[1] = 0x12345678; // x1 = 0x12345678
 
     // SLLI x5, x1, 0
-    const slli2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slli2 = Instruction{ .value = encode.SLLI(5, 1, 0) };
 
     try execute(slli2, &cpuState, &memory);
 
@@ -1653,7 +1653,7 @@ test "Execute SLLI" {
     cpuState.gprs[1] = 0x00000001; // x1 = 1
 
     // SLLI x5, x1, 31
-    const slli3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slli3 = Instruction{ .value = encode.SLLI(5, 1, 31) };
 
     try execute(slli3, &cpuState, &memory);
 
@@ -1665,7 +1665,7 @@ test "Execute SLLI" {
     cpuState.gprs[1] = 0x00000001; // x1 = 1
 
     // SLLI x5, x1, -1
-    const slli5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slli5 = Instruction{ .value = encode.SLLI(5, 1, 0b11111) };
 
     try execute(slli5, &cpuState, &memory);
 
@@ -1685,7 +1685,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = 10; // x1 = 10
 
     // SLTI x5, x1, 20
-    const slti1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti1 = Instruction{ .value = encode.SLTI(5, 1, 20) };
 
     try execute(slti1, &cpuState, &memory);
 
@@ -1697,7 +1697,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = 20; // x1 = 20
 
     // SLTI x5, x1, 20
-    const slti2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti2 = Instruction{ .value = encode.SLTI(5, 1, 20) };
 
     try execute(slti2, &cpuState, &memory);
 
@@ -1709,7 +1709,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = 30; // x1 = 30
 
     // SLTI x5, x1, 20
-    const slti3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti3 = Instruction{ .value = encode.SLTI(5, 1, 20) };
 
     try execute(slti3, &cpuState, &memory);
 
@@ -1722,7 +1722,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = @bitCast(negRs1); // x1 = -10
 
     // SLTI x5, x1, 5
-    const slti4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti4 = Instruction{ .value = encode.SLTI(5, 1, 5) };
 
     try execute(slti4, &cpuState, &memory);
 
@@ -1734,7 +1734,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = 10; // x1 = 10
 
     // SLTI x5, x1, -20
-    const slti5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti5 = Instruction{ .value = encode.SLTI(5, 1, -20) };
 
     try execute(slti5, &cpuState, &memory);
 
@@ -1747,7 +1747,7 @@ test "Execute SLTI" {
     cpuState.gprs[1] = @bitCast(negRs16); // x1 = -10
 
     // SLTI x5, x1, -5
-    const slti6 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const slti6 = Instruction{ .value = encode.SLTI(5, 1, -5) };
 
     try execute(slti6, &cpuState, &memory);
 
@@ -1767,7 +1767,7 @@ test "Execute SLTIU" {
     cpuState.gprs[1] = 10; // x1 = 10
 
     // SLTIU x5, x1, 20
-    const sltiu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltiu1 = Instruction{ .value = encode.SLTIU(5, 1, 20) };
 
     try execute(sltiu1, &cpuState, &memory);
 
@@ -1779,7 +1779,7 @@ test "Execute SLTIU" {
     cpuState.gprs[1] = 20; // x1 = 20
 
     // SLTIU x5, x1, 20
-    const sltiu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltiu2 = Instruction{ .value = encode.SLTIU(5, 1, 20) };
 
     try execute(sltiu2, &cpuState, &memory);
 
@@ -1791,7 +1791,7 @@ test "Execute SLTIU" {
     cpuState.gprs[1] = 30; // x1 = 30
 
     // SLTIU x5, x1, 20
-    const sltiu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltiu3 = Instruction{ .value = encode.SLTIU(5, 1, 20) };
 
     try execute(sltiu3, &cpuState, &memory);
 
@@ -1803,23 +1803,11 @@ test "Execute SLTIU" {
     cpuState.gprs[1] = 1; // x1 = 1
 
     // SLTIU x5, x1, -1
-    const sltiu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sltiu4 = Instruction{ .value = encode.SLTIU(5, 1, -1) };
 
     try execute(sltiu4, &cpuState, &memory);
 
     try std.testing.expectEqual(1, cpuState.gprs[5]); // x5 = 1 (1 < 0xFFFFFFFF)
-    try std.testing.expectEqual(4, cpuState.pc);
-
-    // Case 5: rs1 = 0, imm = large unsigned value (within i32 range)
-    cpuState.pc = 0x00000000;
-    cpuState.gprs[1] = 0; // x1 = 0
-
-    // SLTIU x5, x1, 0x7FFFFFFF
-    const sltiu5 = Instruction{ .value = encode.SW(2, 1, 4) };
-
-    try execute(sltiu5, &cpuState, &memory);
-
-    try std.testing.expectEqual(1, cpuState.gprs[5]); // x5 = 1 (0 < 0x7FFFFFFF)
     try std.testing.expectEqual(4, cpuState.pc);
 }
 
@@ -1835,7 +1823,7 @@ test "Execute XORI" {
     cpuState.gprs[1] = 0b11001100; // x1 = 204
 
     // XORI x5, x1, 0b10101010
-    const xori1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xori1 = Instruction{ .value = encode.XORI(5, 1, 0b10101010) };
 
     try execute(xori1, &cpuState, &memory);
 
@@ -1847,7 +1835,7 @@ test "Execute XORI" {
     cpuState.gprs[1] = 0xCAFEBABE; // x1 = 0xCAFEBABE
 
     // XORI x5, x1, 0
-    const xori2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xori2 = Instruction{ .value = encode.XORI(5, 1, 0) };
 
     try execute(xori2, &cpuState, &memory);
 
@@ -1859,7 +1847,7 @@ test "Execute XORI" {
     cpuState.gprs[1] = 0x12345678; // x1 = 0x12345678
 
     // XORI x5, x1, -1
-    const xori3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xori3 = Instruction{ .value = encode.XORI(5, 1, -1) };
 
     try execute(xori3, &cpuState, &memory);
 
@@ -1871,7 +1859,7 @@ test "Execute XORI" {
     cpuState.gprs[1] = 0x0; // x1 = 0
 
     // XORI x5, x1, 0x3F
-    const xori5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const xori5 = Instruction{ .value = encode.XORI(5, 1, 0x3F) };
 
     try execute(xori5, &cpuState, &memory);
 
@@ -1891,7 +1879,7 @@ test "Execute SRLI" {
     cpuState.gprs[1] = 0b11110000; // x1 = 240
 
     // SRLI x5, x1, 4
-    const srli1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srli1 = Instruction{ .value = encode.SRLI(5, 1, 4) };
 
     try execute(srli1, &cpuState, &memory);
 
@@ -1903,43 +1891,19 @@ test "Execute SRLI" {
     cpuState.gprs[1] = 0x12345678; // x1 = 0x12345678
 
     // SRLI x5, x1, 0
-    const srli2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srli2 = Instruction{ .value = encode.SRLI(5, 1, 0) };
 
     try execute(srli2, &cpuState, &memory);
 
     try std.testing.expectEqual(0x12345678, cpuState.gprs[5]); // x5 = unchanged
     try std.testing.expectEqual(4, cpuState.pc);
 
-    // Case 3: Shift larger than 32 bits (only lower 5 bits of imm used)
-    cpuState.pc = 0x00000000;
-    cpuState.gprs[1] = 0x80000000; // x1 = 0x80000000
-
-    // SRLI x5, x1, 35 (35 & 0b11111 = 3)
-    const srli3 = Instruction{ .value = encode.SW(2, 1, 4) };
-
-    try execute(srli3, &cpuState, &memory);
-
-    try std.testing.expectEqual(0x10000000, cpuState.gprs[5]); // x5 = 0x10000000
-    try std.testing.expectEqual(4, cpuState.pc);
-
-    // Case 4: Shift all bits out
-    cpuState.pc = 0x00000000;
-    cpuState.gprs[1] = 0xFFFFFFFF; // x1 = all bits set
-
-    // SRLI x5, x1, 32 (32 & 0b11111 = 0)
-    const srli4 = Instruction{ .value = encode.SW(2, 1, 4) };
-
-    try execute(srli4, &cpuState, &memory);
-
-    try std.testing.expectEqual(0xFFFFFFFF, cpuState.gprs[5]); // x5 = unchanged
-    try std.testing.expectEqual(4, cpuState.pc);
-
-    // Case 5: Edge case: Input with alternating bits
+    // Case 3: Edge case: Input with alternating bits
     cpuState.pc = 0x00000000;
     cpuState.gprs[1] = 0xAAAAAAAA; // x1 = alternating bits
 
     // SRLI x5, x1, 1
-    const srli5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const srli5 = Instruction{ .value = encode.SRLI(5, 1, 1) };
 
     try execute(srli5, &cpuState, &memory);
 
@@ -1959,7 +1923,7 @@ test "Execute ORI" {
     cpuState.gprs[1] = 0b11001100; // x1 = 204
 
     // ORI x5, x1, 0b10101010
-    const ori1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const ori1 = Instruction{ .value = encode.ORI(5, 1, 0b10101010) };
 
     try execute(ori1, &cpuState, &memory);
 
@@ -1971,7 +1935,7 @@ test "Execute ORI" {
     cpuState.gprs[1] = 0xCAFEBABE; // x1 = 0xCAFEBABE
 
     // ORI x5, x1, 0
-    const ori2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const ori2 = Instruction{ .value = encode.ORI(5, 1, 0) };
 
     try execute(ori2, &cpuState, &memory);
 
@@ -1983,7 +1947,7 @@ test "Execute ORI" {
     cpuState.gprs[1] = 0x12345678; // x1 = 0x12345678
 
     // ORI x5, x1, -1
-    const ori3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const ori3 = Instruction{ .value = encode.ORI(5, 1, -1) };
 
     try execute(ori3, &cpuState, &memory);
 
@@ -1995,7 +1959,7 @@ test "Execute ORI" {
     cpuState.gprs[1] = 0b11110000; // x1 = 240
 
     // ORI x5, x1, -16
-    const ori4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const ori4 = Instruction{ .value = encode.ORI(5, 1, -16) };
 
     try execute(ori4, &cpuState, &memory);
 
@@ -2007,7 +1971,7 @@ test "Execute ORI" {
     cpuState.gprs[1] = 0x0; // x1 = 0
 
     // ORI x5, x1, 0x7FF
-    const ori5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const ori5 = Instruction{ .value = encode.ORI(5, 1, 0x7FF) };
 
     try execute(ori5, &cpuState, &memory);
 
@@ -2033,7 +1997,7 @@ test "Execute LB" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LB x5, 0(x1)
-    const lb1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lb1 = Instruction{ .value = encode.LB(5, 1, 0) };
 
     try execute(lb1, &cpuState, &memory);
 
@@ -2045,7 +2009,7 @@ test "Execute LB" {
     cpuState.gprs[1] = 0x00000001; // Base address in x1
 
     // LB x5, 0(x1)
-    const lb2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lb2 = Instruction{ .value = encode.LB(5, 1, 0) };
 
     try execute(lb2, &cpuState, &memory);
 
@@ -2058,7 +2022,7 @@ test "Execute LB" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LB x5, 2(x1)
-    const lb3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lb3 = Instruction{ .value = encode.LB(5, 1, 2) };
 
     try execute(lb3, &cpuState, &memory);
 
@@ -2070,7 +2034,7 @@ test "Execute LB" {
     cpuState.gprs[1] = 0x00000004; // Base address in x1
 
     // LB x5, -1(x1)
-    const lb4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lb4 = Instruction{ .value = encode.LB(5, 1, -1) };
 
     try execute(lb4, &cpuState, &memory);
 
@@ -2109,7 +2073,7 @@ test "Execute LH" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LH x5, 0(x1)
-    const lh1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lh1 = Instruction{ .value = encode.LH(5, 1, 0) };
 
     try execute(lh1, &cpuState, &memory);
 
@@ -2121,7 +2085,7 @@ test "Execute LH" {
     cpuState.gprs[1] = 0x00000002; // Base address in x1
 
     // LH x5, 0(x1)
-    const lh2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lh2 = Instruction{ .value = encode.LH(5, 1, 0) };
 
     try execute(lh2, &cpuState, &memory);
 
@@ -2134,7 +2098,7 @@ test "Execute LH" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LH x5, 4(x1)
-    const lh3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lh3 = Instruction{ .value = encode.LH(5, 1, 4) };
 
     try execute(lh3, &cpuState, &memory);
 
@@ -2146,7 +2110,7 @@ test "Execute LH" {
     cpuState.gprs[1] = 0x00000006; // Base address in x1
 
     // LH x5, 0(x1)
-    const lh4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lh4 = Instruction{ .value = encode.LH(5, 1, 0) };
 
     try execute(lh4, &cpuState, &memory);
 
@@ -2184,7 +2148,7 @@ test "Execute LBU" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LBU x5, 0(x1)
-    const lbu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lbu1 = Instruction{ .value = encode.LBU(5, 1, 0) };
 
     try execute(lbu1, &cpuState, &memory);
 
@@ -2196,7 +2160,7 @@ test "Execute LBU" {
     cpuState.gprs[1] = 0x00000001; // Base address in x1
 
     // LBU x5, 0(x1)
-    const lbu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lbu2 = Instruction{ .value = encode.LBU(5, 1, 0) };
 
     try execute(lbu2, &cpuState, &memory);
 
@@ -2208,7 +2172,7 @@ test "Execute LBU" {
     cpuState.gprs[1] = 0x00000002; // Base address in x1
 
     // LBU x5, 0(x1)
-    const lbu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lbu3 = Instruction{ .value = encode.LBU(5, 1, 0) };
 
     try execute(lbu3, &cpuState, &memory);
 
@@ -2220,7 +2184,7 @@ test "Execute LBU" {
     cpuState.gprs[1] = 0x00000003; // Base address in x1
 
     // LBU x5, 0(x1)
-    const lbu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lbu4 = Instruction{ .value = encode.LBU(5, 1, 0) };
 
     try execute(lbu4, &cpuState, &memory);
 
@@ -2232,7 +2196,7 @@ test "Execute LBU" {
     cpuState.gprs[1] = 0x00000001; // Base address in x1
 
     // LBU x5, 1(x1)
-    const lbu5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lbu5 = Instruction{ .value = encode.LBU(5, 1, 1) };
 
     try execute(lbu5, &cpuState, &memory);
 
@@ -2257,7 +2221,7 @@ test "Execute LHU" {
     cpuState.gprs[1] = 0x00000000; // Base address in x1
 
     // LHU x5, 0(x1)
-    const lhu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lhu1 = Instruction{ .value = encode.LHU(5, 1, 0) };
 
     try execute(lhu1, &cpuState, &memory);
 
@@ -2269,7 +2233,7 @@ test "Execute LHU" {
     cpuState.gprs[1] = 0x00000002; // Base address in x1
 
     // LHU x5, 0(x1)
-    const lhu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lhu2 = Instruction{ .value = encode.LHU(5, 1, 0) };
 
     try execute(lhu2, &cpuState, &memory);
 
@@ -2281,7 +2245,7 @@ test "Execute LHU" {
     cpuState.gprs[1] = 0x00000004; // Base address in x1
 
     // LHU x5, 0(x1)
-    const lhu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lhu3 = Instruction{ .value = encode.LHU(5, 1, 0) };
 
     try execute(lhu3, &cpuState, &memory);
 
@@ -2293,7 +2257,7 @@ test "Execute LHU" {
     cpuState.gprs[1] = 0x00000001; // Base address in x1
 
     // LHU x5, 3(x1) -> Address = 1 + 3 = 4
-    const lhu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lhu4 = Instruction{ .value = encode.LHU(5, 1, 3) };
 
     try execute(lhu4, &cpuState, &memory);
 
@@ -2305,7 +2269,7 @@ test "Execute LHU" {
     cpuState.gprs[1] = 0x00000003; // Base address in x1
 
     // LHU x5, 0(x1) -> Address = 3
-    const lhu5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lhu5 = Instruction{ .value = encode.LHU(5, 1, 0) };
 
     const err = execute(lhu5, &cpuState, &memory);
 
@@ -2327,7 +2291,7 @@ test "Execute SB" {
     cpuState.gprs[2] = 0x0000007F; // Value to store in x2 (127)
 
     // SB x2, 0(x1)
-    const sb1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sb1 = Instruction{ .value = encode.SB(2, 0, 1) };
 
     try execute(sb1, &cpuState, &memory);
 
@@ -2342,7 +2306,7 @@ test "Execute SB" {
     cpuState.gprs[2] = @bitCast(neg128); // Value to store in x2 (-128)
 
     // SB x2, 0(x1)
-    const sb2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sb2 = Instruction{ .value = encode.SB(2, 0, 1) };
 
     try execute(sb2, &cpuState, &memory);
 
@@ -2356,7 +2320,7 @@ test "Execute SB" {
     cpuState.gprs[2] = 0x00000001; // Value to store in x2 (1)
 
     // SB x2, 2(x1)
-    const sb3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sb3 = Instruction{ .value = encode.SB(2, 2, 1) };
 
     try execute(sb3, &cpuState, &memory);
 
@@ -2370,7 +2334,7 @@ test "Execute SB" {
     cpuState.gprs[2] = 0x000000FF; // Value to store in x2 (255)
 
     // SB x2, -4(x1)
-    const sb4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sb4 = Instruction{ .value = encode.SB(2, -4, 1) };
 
     try execute(sb4, &cpuState, &memory);
 
@@ -2404,7 +2368,7 @@ test "Execute SH" {
     cpuState.gprs[2] = 0x00007FFF; // Value to store in x2 (32767)
 
     // SH x2, 0(x1)
-    const sh1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sh1 = Instruction{ .value = encode.SH(2, 0, 1) };
 
     try execute(sh1, &cpuState, &memory);
 
@@ -2418,7 +2382,7 @@ test "Execute SH" {
     cpuState.gprs[2] = 0xFFFFFFFF; // Value to store in x2 (-1, 0xFFFF)
 
     // SH x2, 0(x1)
-    const sh2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sh2 = Instruction{ .value = encode.SH(2, 0, 1) };
 
     try execute(sh2, &cpuState, &memory);
 
@@ -2432,7 +2396,7 @@ test "Execute SH" {
     cpuState.gprs[2] = 0x00001234; // Value to store in x2 (4660)
 
     // SH x2, 6(x1)
-    const sh3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sh3 = Instruction{ .value = encode.SH(2, 6, 1) };
 
     try execute(sh3, &cpuState, &memory);
 
@@ -2446,7 +2410,7 @@ test "Execute SH" {
     cpuState.gprs[2] = 0xABCD; // Value to store in x2
 
     // SH x2, -2(x1)
-    const sh4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const sh4 = Instruction{ .value = encode.SH(2, -2, 1) };
 
     try execute(sh4, &cpuState, &memory);
 
@@ -2480,7 +2444,7 @@ test "Execute BNE" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BNE x1, x2, 12
-    const bne1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bne1 = Instruction{ .value = encode.BNE(1, 2, 12) };
 
     try execute(bne1, &cpuState, &memory);
 
@@ -2492,7 +2456,7 @@ test "Execute BNE" {
     cpuState.gprs[2] = 15; // x2 = 15
 
     // BNE x1, x2, 8
-    const bne2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bne2 = Instruction{ .value = encode.BNE(1, 2, 8) };
 
     try execute(bne2, &cpuState, &memory);
 
@@ -2504,7 +2468,7 @@ test "Execute BNE" {
     cpuState.gprs[2] = 35; // x2 = 35
 
     // BNE x1, x2, -8
-    const bne3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bne3 = Instruction{ .value = encode.BNE(1, 2, -8) };
 
     try execute(bne3, &cpuState, &memory);
 
@@ -2516,7 +2480,7 @@ test "Execute BNE" {
     cpuState.gprs[2] = 2; // x2 = 2
 
     // BNE x1, x2, 0
-    const bne4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bne4 = Instruction{ .value = encode.BNE(1, 2, 0) };
 
     try execute(bne4, &cpuState, &memory);
 
@@ -2528,7 +2492,7 @@ test "Execute BNE" {
     cpuState.gprs[2] = 50; // x2 = 50
 
     // BNE x1, x2, 2048
-    const bne5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bne5 = Instruction{ .value = encode.BNE(1, 2, 2048) };
 
     try execute(bne5, &cpuState, &memory);
 
@@ -2548,7 +2512,7 @@ test "Execute BLT" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BLT x1, x2, 12
-    const blt1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const blt1 = Instruction{ .value = encode.BLT(1, 2, 12) };
 
     try execute(blt1, &cpuState, &memory);
 
@@ -2560,7 +2524,7 @@ test "Execute BLT" {
     cpuState.gprs[2] = 15; // x2 = 15
 
     // BLT x1, x2, 8
-    const blt2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const blt2 = Instruction{ .value = encode.BLT(1, 2, 8) };
 
     try execute(blt2, &cpuState, &memory);
 
@@ -2572,7 +2536,7 @@ test "Execute BLT" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BLT x1, x2, 16
-    const blt3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const blt3 = Instruction{ .value = encode.BLT(1, 2, 16) };
 
     try execute(blt3, &cpuState, &memory);
 
@@ -2585,7 +2549,7 @@ test "Execute BLT" {
     cpuState.gprs[2] = 5; // x2 = 5
 
     // BLT x1, x2, 20
-    const blt4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const blt4 = Instruction{ .value = encode.BLT(1, 2, 20) };
 
     try execute(blt4, &cpuState, &memory);
 
@@ -2598,7 +2562,7 @@ test "Execute BLT" {
     cpuState.gprs[2] = @bitCast(neg10); // x2 = -10
 
     // BLT x1, x2, -8
-    const blt5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const blt5 = Instruction{ .value = encode.BLT(1, 2, -8) };
 
     try execute(blt5, &cpuState, &memory);
 
@@ -2618,7 +2582,7 @@ test "Execute BGE" {
     cpuState.gprs[2] = 5; // x2 = 5
 
     // BGE x1, x2, 16
-    const bge1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bge1 = Instruction{ .value = encode.BGE(1, 2, 16) };
 
     try execute(bge1, &cpuState, &memory);
 
@@ -2630,7 +2594,7 @@ test "Execute BGE" {
     cpuState.gprs[2] = 15; // x2 = 15
 
     // BGE x1, x2, 12
-    const bge2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bge2 = Instruction{ .value = encode.BGE(1, 2, 12) };
 
     try execute(bge2, &cpuState, &memory);
 
@@ -2642,7 +2606,7 @@ test "Execute BGE" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BGE x1, x2, 8
-    const bge3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bge3 = Instruction{ .value = encode.BGE(1, 2, 8) };
 
     try execute(bge3, &cpuState, &memory);
 
@@ -2656,7 +2620,7 @@ test "Execute BGE" {
     cpuState.gprs[2] = @bitCast(neg10); // x2 = -10
 
     // BGE x1, x2, 20
-    const bge4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bge4 = Instruction{ .value = encode.BGE(1, 2, 20) };
 
     try execute(bge4, &cpuState, &memory);
 
@@ -2669,7 +2633,7 @@ test "Execute BGE" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BGE x1, x2, -12
-    const bge5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bge5 = Instruction{ .value = encode.BGE(1, 2, -12) };
 
     try execute(bge5, &cpuState, &memory);
 
@@ -2689,7 +2653,7 @@ test "Execute BLTU" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BLTU x1, x2, 12
-    const bltu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bltu1 = Instruction{ .value = encode.BLTU(1, 2, 12) };
 
     try execute(bltu1, &cpuState, &memory);
 
@@ -2701,7 +2665,7 @@ test "Execute BLTU" {
     cpuState.gprs[2] = 15; // x2 = 15
 
     // BLTU x1, x2, 8
-    const bltu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bltu2 = Instruction{ .value = encode.BLTU(1, 2, 8) };
 
     try execute(bltu2, &cpuState, &memory);
 
@@ -2713,7 +2677,7 @@ test "Execute BLTU" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BLTU x1, x2, 16
-    const bltu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bltu3 = Instruction{ .value = encode.BLTU(1, 2, 16) };
 
     try execute(bltu3, &cpuState, &memory);
 
@@ -2725,7 +2689,7 @@ test "Execute BLTU" {
     cpuState.gprs[2] = 0xFFFFFFFF; // x2 = max unsigned (4294967295)
 
     // BLTU x1, x2, 20
-    const bltu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bltu4 = Instruction{ .value = encode.BLTU(1, 2, 20) };
 
     try execute(bltu4, &cpuState, &memory);
 
@@ -2737,7 +2701,7 @@ test "Execute BLTU" {
     cpuState.gprs[2] = 100; // x2 = 100 (unsigned)
 
     // BLTU x1, x2, -8
-    const bltu5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bltu5 = Instruction{ .value = encode.BLTU(1, 2, -8) };
 
     try execute(bltu5, &cpuState, &memory);
 
@@ -2757,7 +2721,7 @@ test "Execute BGEU" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BGEU x1, x2, 16
-    const bgeu1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bgeu1 = Instruction{ .value = encode.BGEU(1, 2, 16) };
 
     try execute(bgeu1, &cpuState, &memory);
 
@@ -2769,7 +2733,7 @@ test "Execute BGEU" {
     cpuState.gprs[2] = 15; // x2 = 15
 
     // BGEU x1, x2, 12
-    const bgeu2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bgeu2 = Instruction{ .value = encode.BGEU(1, 2, 12) };
 
     try execute(bgeu2, &cpuState, &memory);
 
@@ -2781,7 +2745,7 @@ test "Execute BGEU" {
     cpuState.gprs[2] = 10; // x2 = 10
 
     // BGEU x1, x2, 8
-    const bgeu3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bgeu3 = Instruction{ .value = encode.BGEU(1, 2, 8) };
 
     try execute(bgeu3, &cpuState, &memory);
 
@@ -2793,7 +2757,7 @@ test "Execute BGEU" {
     cpuState.gprs[2] = 100; // x2 = 100 (unsigned)
 
     // BGEU x1, x2, 20
-    const bgeu4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bgeu4 = Instruction{ .value = encode.BGEU(1, 2, 20) };
 
     try execute(bgeu4, &cpuState, &memory);
 
@@ -2805,7 +2769,7 @@ test "Execute BGEU" {
     cpuState.gprs[2] = 0xFFFFFFFF; // x2 = 4294967295 (unsigned)
 
     // BGEU x1, x2, -8
-    const bgeu5 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const bgeu5 = Instruction{ .value = encode.BGEU(1, 2, -8) };
 
     try execute(bgeu5, &cpuState, &memory);
 
@@ -2822,7 +2786,7 @@ test "Execute LUI" {
 
     // Case 1: Load a positive immediate value
     // LUI x5, 0x12345
-    const lui1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lui1 = Instruction{ .value = encode.LUI(5, 0x12345) };
 
     try execute(lui1, &cpuState, &memory);
 
@@ -2833,7 +2797,7 @@ test "Execute LUI" {
     cpuState.pc = 0;
 
     // LUI x6, -1 (0xFFFFF)
-    const lui2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lui2 = Instruction{ .value = encode.LUI(6, -1) };
 
     try execute(lui2, &cpuState, &memory);
 
@@ -2844,7 +2808,7 @@ test "Execute LUI" {
     cpuState.pc = 0;
 
     // LUI x7, 0x0
-    const lui3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lui3 = Instruction{ .value = encode.LUI(7, 0) };
 
     try execute(lui3, &cpuState, &memory);
 
@@ -2855,7 +2819,7 @@ test "Execute LUI" {
     cpuState.pc = 0;
 
     // LUI x0, 0x12345
-    const lui4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const lui4 = Instruction{ .value = encode.LUI(0, 0x12345) };
 
     try execute(lui4, &cpuState, &memory);
 
@@ -2875,7 +2839,7 @@ test "Execute AUIPC" {
 
     // Case 1: Add a positive immediate value
     // AUIPC x5, 0x12345
-    const auipc1 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const auipc1 = Instruction{ .value = encode.AUIPC(5, 0x12345) };
 
     try execute(auipc1, &cpuState, &memory);
 
@@ -2885,7 +2849,7 @@ test "Execute AUIPC" {
     // Case 2: Add a negative immediate value
     // AUIPC x6, -1 (0xFFFFF)
     cpuState.pc = 0x00002000;
-    const auipc2 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const auipc2 = Instruction{ .value = encode.AUIPC(6, -1) };
 
     try execute(auipc2, &cpuState, &memory);
 
@@ -2895,7 +2859,7 @@ test "Execute AUIPC" {
     // Case 3: Add with imm = 0
     // AUIPC x7, 0x0
     cpuState.pc = 0x00003000;
-    const auipc3 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const auipc3 = Instruction{ .value = encode.AUIPC(7, 0x0) };
 
     try execute(auipc3, &cpuState, &memory);
 
@@ -2905,7 +2869,7 @@ test "Execute AUIPC" {
     // Case 4: Write to x0 (should remain 0)
     // AUIPC x0, 0x12345
     cpuState.pc = 0x00004000;
-    const auipc4 = Instruction{ .value = encode.SW(2, 1, 4) };
+    const auipc4 = Instruction{ .value = encode.AUIPC(0, 0x12334) };
 
     try execute(auipc4, &cpuState, &memory);
 

@@ -126,7 +126,7 @@ test "I-type immediate extraction" {
 }
 
 test "S-type immediate extraction" {
-    const inst = Instruction{ .value = encode.SW(3, 4, 20) }; // SW x3, 20(x4)
+    const inst = Instruction{ .value = encode.SW(3, 20, 4) }; // SW x3, 20(x4)
     try std.testing.expectEqual(20, inst.immSType());
 }
 

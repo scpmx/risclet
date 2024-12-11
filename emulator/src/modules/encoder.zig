@@ -105,15 +105,15 @@ pub fn SRAI(rd: u5, rs1: u5, shamt: u5) u32 {
 }
 
 // S-Type instruction encoders
-pub fn SB(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SB(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b000, 0b0100011); // funct3 = 0b000, opcode = 0b0100011
 }
 
-pub fn SH(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SH(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b001, 0b0100011); // funct3 = 0b001, opcode = 0b0100011
 }
 
-pub fn SW(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SW(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b010, 0b0100011); // funct3 = 0b010, opcode = 0b0100011
 }
 
