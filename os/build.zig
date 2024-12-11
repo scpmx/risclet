@@ -29,7 +29,7 @@ pub fn build(b: *std.Build) void {
         .name = "os",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
-        .optimize = .ReleaseSmall,
+        .optimize = .ReleaseFast,
     });
 
     const bin = b.addObjCopy(exe.getEmittedBin(), .{

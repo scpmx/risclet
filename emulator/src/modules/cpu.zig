@@ -5,6 +5,8 @@ const encode = @import("./encoder.zig");
 
 const Privilege = enum { Machine, Supervisor, User };
 
+pub const SStatus = struct {};
+
 pub const CPUState = struct {
     // Current Privilege Level
     privilege: Privilege = .Machine,
@@ -17,8 +19,14 @@ pub const CPUState = struct {
 
     // Supervisor Registers
     sstatus: u32 = 0,
+
+    // Supervisor Trap Vector Register
     stvec: u32 = 0,
+
+    // Supervisor Exception Program Counter
     sepc: u32 = 0,
+
+    // Supervisor Cause Register
     scause: u32 = 0,
     stval: u32 = 0,
 
