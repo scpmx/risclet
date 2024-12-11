@@ -4,7 +4,12 @@ const DecodedInstruction = instruction.DecodedInstruction;
 const RawInstruction = instruction.RawInstruction;
 const Memory = @import("./memory.zig").Memory;
 
+const Privilege = enum { Machine, Supervisor, User };
+
 pub const CPUState = struct {
+    // Current Privilege Level
+    privilege: Privilege = .Machine,
+
     // General Purpose Registers
     gprs: [32]u32 = [_]u32{0} ** 32,
 
@@ -392,36 +397,36 @@ pub fn execute(decodedInstruction: DecodedInstruction, cpuState: *CPUState, memo
         .System => |inst| {
             switch (inst.opcode) {
                 0b1110011 => {
-                    switch (inst.imm) {
-                        // Not tested as this is a sample implementation
-                        0b00000 => { // ECALL
-                            const syscallNumber = cpuState.gprs[17]; // a7 is 17 in RISC-V ABI
-                            const arg0 = cpuState.gprs[10]; // a0 is x10 in RISC-V ABI
-
-                            switch (syscallNumber) {
-                                1 => { // Print integer
-                                    std.debug.print("{d}\n", .{arg0});
+                    if (inst.funct7 == 0b0001000) {
+                        if (inst.funct3 == 0b000) {
+                            switch (inst.imm) {
+                                0x000 => { // WFI
+                                    std.debug.print("WFI\n", .{});
                                 },
-                                2 => { // Print char
-                                    const ch: u8 = @truncate(arg0);
-                                    std.debug.print("{c}", .{ch});
+                                0x102 => { // SRET
+                                    std.debug.print("SRET\n", .{});
                                 },
-                                3 => { // Exit emulator
-                                    const exitCode: u8 = @truncate(arg0);
-                                    std.debug.print("ECALL: Exit with code {d}\n", .{exitCode});
-                                    std.process.exit(exitCode);
-                                },
-                                else => {
-                                    std.debug.print("ECALL: Unsupported system call {d}\n", .{syscallNumber});
-                                    @breakpoint();
-                                },
+                                else => return error.UnknownImm,
                             }
-                        },
-                        // Not tested
-                        0b00001 => { // EBREAK
-                            @breakpoint();
-                        },
-                        else => return error.UnknownImm,
+                        }
+                    } else if (inst.funct3 == 0b000) {
+                        switch (inst.imm) {
+                            0x000 => { // ECALL
+                                std.debug.print("ECALL\n", .{});
+                            },
+                            0x001 => { // EBREAK
+                                std.debug.print("EBREAK\n", .{});
+                            },
+                            else => return error.UnknownImm,
+                        }
+                    } else if (inst.funct3 == 0b001) { // CSRRW
+                        std.debug.print("CSRRW\n", .{});
+                    } else if (inst.funct3 == 0b010) { // CSRRS
+                        std.debug.print("CSRRS\n", .{});
+                    } else if (inst.funct3 == 0b011) { // CSRRC
+                        std.debug.print("CSRRC\n", .{});
+                    } else {
+                        return error.UnknownFunct3;
                     }
                 },
                 else => return error.UnknownOpcode,

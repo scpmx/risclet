@@ -28,9 +28,9 @@ pub const DecodedInstruction = union(enum) {
     },
     BType: struct {
         opcode: u7, // Bits [0:6]: Specifies the operation group (e.g., branches).
+        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
         rs1: u5, // Bits [15:19]: First source register for comparison.
         rs2: u5, // Bits [20:24]: Second source register for comparison.
-        funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., BEQ, BNE).
         imm: i32, // Calculated immediate value (sign-extended).
     },
     UType: struct {
@@ -45,8 +45,11 @@ pub const DecodedInstruction = union(enum) {
     },
     System: struct {
         opcode: u7, // Bits [0:6]: Specifies the operation group (`1110011` for system instructions).
-        imm: u5, // Bits [24:20]: Immediate.
+        rd: u5, // Bits [7:11]: Destination register.
         funct3: u3, // Bits [12:14]: Sub-operation identifier (e.g., ECALL, EBREAK).
+        rs1: u5, // Bits [15:19]: First source register for comparison.
+        imm: u12, // Bits [20:31]: Immediate.
+        funct7: u7, // Bits [25:31]: For SRET
     },
     Fence: struct {
         opcode: u7, // Bits [0:6]: Specifies the operation group (`0001111` for FENCE).
@@ -142,13 +145,14 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
             };
         },
         0b1110011 => { // SYSTEM
-            const imm: u5 = @truncate((rawInstruction >> 20) & 0b11111); // Bits [24:20]: Immediate
-            const funct3: u3 = @truncate((rawInstruction >> 12) & 0b111); // Bits [14:12]
             return DecodedInstruction{
                 .System = .{
                     .opcode = @truncate(rawInstruction & 0b1111111),
-                    .imm = imm,
-                    .funct3 = funct3,
+                    .rd = @truncate((rawInstruction >> 7) & 0b11111),
+                    .funct3 = @truncate((rawInstruction >> 12) & 0b111), // Bits [14:12]
+                    .rs1 = @truncate((rawInstruction >> 15) & 0b11111),
+                    .imm = @truncate((rawInstruction >> 20) & 0b111111111111), // Bits [24:20]: Immediate
+                    .funct7 = @truncate((rawInstruction >> 25) & 0b1111111), // For SRET
                 },
             };
         },
@@ -167,7 +171,7 @@ pub fn decode(rawInstruction: RawInstruction) !DecodedInstruction {
                         .FenceI = .{ .opcode = @truncate(rawInstruction & 0b1111111), .funct3 = funct3 },
                     };
                 },
-                else => return error.UnknownFunc3,
+                else => return error.UnknownFunct3,
             }
         },
         else => |_| {
@@ -316,7 +320,7 @@ test "decode j-type instruction" {
 }
 
 test "decode system instruction - ECALL" {
-    const inst: RawInstruction = 0x00000073; // ECALL
+    const inst: RawInstruction = encode.ECALL();
     const instructionType = try decode(inst);
 
     switch (instructionType) {
@@ -330,7 +334,7 @@ test "decode system instruction - ECALL" {
 }
 
 test "decode system instruction - EBREAK" {
-    const inst: RawInstruction = 0x00100073; // EBREAK
+    const inst: RawInstruction = encode.EBREAK();
     const instructionType = try decode(inst);
 
     switch (instructionType) {
@@ -338,6 +342,82 @@ test "decode system instruction - EBREAK" {
             try std.testing.expectEqual(0b1110011, sys.opcode);
             try std.testing.expectEqual(0b000, sys.funct3);
             try std.testing.expectEqual(0b00001, sys.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - SRET" {
+    const inst: RawInstruction = encode.SRET();
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
+            try std.testing.expectEqual(0b000, sys.funct3);
+            try std.testing.expectEqual(0b01000, sys.funct7);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - WFI" {
+    const inst: RawInstruction = encode.WFI();
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
+            try std.testing.expectEqual(0b000, sys.funct3);
+            try std.testing.expectEqual(0b01000, sys.funct7);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - CSRRW" {
+    const inst: RawInstruction = encode.CSRRW(4, 2, 0x100); // CSRRW x4, CSR 0x100, x2
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
+            try std.testing.expectEqual(0b001, sys.funct3);
+            try std.testing.expectEqual(4, sys.rd);
+            try std.testing.expectEqual(2, sys.rs1);
+            try std.testing.expectEqual(0x100, sys.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - CSRRS" {
+    const inst: RawInstruction = encode.CSRRS(4, 2, 0x100); // CSRRS x4, CSR 0x100, x2
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
+            try std.testing.expectEqual(0b010, sys.funct3);
+            try std.testing.expectEqual(4, sys.rd);
+            try std.testing.expectEqual(2, sys.rs1);
+            try std.testing.expectEqual(0x100, sys.imm);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode system instruction - CSRRC" {
+    const inst: RawInstruction = encode.CSRRC(4, 2, 0x100); // CSRRC x4, CSR 0x100, x2
+    const instructionType = try decode(inst);
+
+    switch (instructionType) {
+        .System => |sys| {
+            try std.testing.expectEqual(0b1110011, sys.opcode);
+            try std.testing.expectEqual(0b011, sys.funct3);
+            try std.testing.expectEqual(4, sys.rd);
+            try std.testing.expectEqual(2, sys.rs1);
+            try std.testing.expectEqual(0x100, sys.imm);
         },
         else => try std.testing.expect(false),
     }
