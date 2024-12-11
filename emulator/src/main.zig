@@ -6,9 +6,9 @@ const deb = @import("./modules/debug.zig");
 const elf = @import("./modules/elf.zig");
 
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
-    const raw: ins.RawInstruction = try memory.read32(cpuState.pc);
-    const decodedInstruction = try ins.decode(raw);
-    try cpu.execute(decodedInstruction, cpuState, memory);
+    const raw = try memory.read32(cpuState.pc);
+    const instsruction = ins.Instruction{ .value = raw };
+    try cpu.execute(instsruction, cpuState, memory);
 }
 
 pub fn main() !void {

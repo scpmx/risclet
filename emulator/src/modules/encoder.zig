@@ -143,11 +143,11 @@ pub fn BGEU(rs1: u5, rs2: u5, imm: i13) u32 {
 }
 
 // U-Type instruction encoders
-pub fn encodeLUI(rd: u5, imm: i20) u32 {
+pub fn LUI(rd: u5, imm: i20) u32 {
     return UType(rd, imm, 0b0110111);
 }
 
-pub fn encodeAUIPC(rd: u5, imm: i20) u32 {
+pub fn AUIPC(rd: u5, imm: i20) u32 {
     return UType(rd, imm, 0b0010111);
 }
 
