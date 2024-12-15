@@ -375,15 +375,19 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .WFI => {
             std.debug.print("WFI", .{});
+            cpu.pc += 4;
         },
         .SRET => {
             std.debug.print("SRET", .{});
+            cpu.pc += 4;
         },
         .ECALL => {
             std.debug.print("ECALL", .{});
+            cpu.pc += 4;
         },
         .EBREAK => {
             std.debug.print("EBREAK", .{});
+            cpu.pc += 4;
         },
         .CSRRW => |x| {
             const rs1Value = cpu.gprs[x.rs1];
@@ -391,6 +395,7 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
+            cpu.pc += 4;
         },
         .CSRRS => |x| {
             const rs1Value = cpu.gprs[x.rs1];
@@ -398,6 +403,7 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
+            cpu.pc += 4;
         },
         .CSRRC => |x| {
             const rs1Value = cpu.gprs[x.rs1];
@@ -405,15 +411,39 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
+            cpu.pc += 4;
         },
-        .CSRRWI => |_| {},
-        .CSRRSI => |_| {},
-        .CSRRCI => |_| {},
+        .CSRRWI => |x| {
+            const immAsU32: u32 = @as(u32, x.imm);
+            const oldValue = try cpu.csrs.readWrite(x.csr, immAsU32);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+            cpu.pc += 4;
+        },
+        .CSRRSI => |x| {
+            const immAsU32: u32 = @as(u32, x.imm);
+            const oldValue = try cpu.csrs.readSet(x.csr, immAsU32);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+            cpu.pc += 4;
+        },
+        .CSRRCI => |x| {
+            const immAsU32: u32 = @as(u32, x.imm);
+            const oldValue = try cpu.csrs.readClear(x.csr, immAsU32);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+            cpu.pc += 4;
+        },
         .FENCE => {
             std.debug.print("FENCE", .{});
+            cpu.pc += 4;
         },
         .FENCEI => {
             std.debug.print("FENCE.I", .{});
+            cpu.pc += 4;
         },
     }
 }

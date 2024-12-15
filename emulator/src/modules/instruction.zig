@@ -71,6 +71,10 @@ pub const RawInstruction = struct {
         return signExtend((imm3 << 20) | (imm0 << 12) | (imm1 << 11) | (imm2 << 1), 21);
     }
 
+    pub inline fn immSysType(self: RawInstruction) u5 {
+        return @truncate((self.value >> 15) & 0b11111);
+    }
+
     pub inline fn csr(self: RawInstruction) u12 {
         return @truncate((self.value >> 20) & 0b111111111111);
     }

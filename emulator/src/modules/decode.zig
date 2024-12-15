@@ -15,7 +15,7 @@ const JType = struct { rd: u5, imm: i32 };
 
 const SysType = struct { rd: u5, rs1: u5, csr: u12 };
 
-const SysImmType = struct { rd: u5, rs1: u5, csr: u12, imm: u4 };
+const SysImmType = struct { rd: u5, imm: u5, csr: u12 };
 
 pub const DecodedInstruction = union(enum) {
     // R-Type Instructions
@@ -330,9 +330,8 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                     return DecodedInstruction{
                         .CSRRWI = SysImmType{
                             .rd = instruction.rd(),
-                            .rs1 = instruction.rs1(),
+                            .imm = instruction.immSysType(),
                             .csr = instruction.csr(),
-                            .imm = 0, // TODO
                         },
                     };
                 },
@@ -340,9 +339,8 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                     return DecodedInstruction{
                         .CSRRSI = SysImmType{
                             .rd = instruction.rd(),
-                            .rs1 = instruction.rs1(),
+                            .imm = instruction.immSysType(),
                             .csr = instruction.csr(),
-                            .imm = 0, // TODO
                         },
                     };
                 },
@@ -350,9 +348,8 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                     return DecodedInstruction{
                         .CSRRCI = SysImmType{
                             .rd = instruction.rd(),
-                            .rs1 = instruction.rs1(),
+                            .imm = instruction.immSysType(),
                             .csr = instruction.csr(),
-                            .imm = 0, // TODO
                         },
                     };
                 },
@@ -373,3 +370,5 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
         else => return error.UnknownInstruction,
     }
 }
+
+test "decode tests" {}

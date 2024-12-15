@@ -68,7 +68,7 @@ pub const Csrs = struct {
             0x143 => &self.stval,
             0x144 => &self.sip,
             0x180 => &self.satp,
-            else => return error.UnknownCSR,
+            else => error.UnknownCSR,
         };
     }
 
