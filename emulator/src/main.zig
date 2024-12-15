@@ -37,9 +37,7 @@ pub fn main() !void {
 
     const entry = try elf.load_elf(&memory, buffer);
 
-    var cpuState: cpu.CPUState = .{ .pc = entry, .gprs = [_]u32{0} ** 32 };
-
-    cpuState.gprs[2] = 0x000FFFFC;
+    var cpuState = cpu.CPUState.default(entry, 0x000FFFFC);
 
     while (true) {
         try tick(&cpuState, &memory);
