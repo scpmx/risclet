@@ -447,3 +447,108 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
     }
 }
+
+test "csrrw test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize registers and CSR
+    cpu.gprs[2] = 0xAAAAAAAA;
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRW: Write CSR and read old value to rd
+    const di = DecodedInstruction{ .CSRRW = .{ .rd = 1, .rs1 = 2, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[1], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0xAAAAAAAA);
+}
+
+test "csrrs test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize registers and CSR
+    cpu.gprs[3] = 0x0F0F0F0F;
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRS: Read CSR and set bits using rs1
+    const di = DecodedInstruction{ .CSRRS = .{ .rd = 2, .rs1 = 3, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[2], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0x5F5F5F5F);
+}
+
+test "csrrc test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize registers and CSR
+    cpu.gprs[4] = 0x0F0F0F0F;
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRC: Read CSR and clear bits using rs1
+    const di = DecodedInstruction{ .CSRRC = .{ .rd = 3, .rs1 = 4, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[3], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0x50505050);
+}
+
+test "csrrwi test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize CSR
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRWI: Write immediate to CSR and read old value to rd
+    const di = DecodedInstruction{ .CSRRWI = .{ .rd = 4, .imm = 0xA, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[4], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0xA);
+}
+
+test "csrrsi test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize CSR
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRSI: Read CSR and set bits using immediate
+    const di = DecodedInstruction{ .CSRRSI = .{ .rd = 5, .imm = 0xF, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[5], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0x5555555F);
+}
+
+test "csrrci test" {
+    var mem = try Memory.init(std.testing.allocator, 16);
+    defer mem.deinit(std.testing.allocator);
+
+    var cpu = CPUState.default(0, 0);
+
+    // Initialize CSR
+    cpu.csrs.sstatus = 0x55555555;
+
+    // CSRRCI: Read CSR and clear bits using immediate
+    const di = DecodedInstruction{ .CSRRCI = .{ .rd = 6, .imm = 0xF, .csr = 0x100 } };
+    try execute(di, &cpu, &mem);
+
+    try std.testing.expectEqual(cpu.gprs[6], 0x55555555);
+    try std.testing.expectEqual(cpu.csrs.sstatus, 0x55555550);
+}
