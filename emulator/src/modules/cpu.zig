@@ -385,9 +385,27 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         .EBREAK => {
             std.debug.print("EBREAK", .{});
         },
-        .CSRRW => |_| {},
-        .CSRRS => |_| {},
-        .CSRRC => |_| {},
+        .CSRRW => |x| {
+            const rs1Value = cpu.gprs[x.rs1];
+            const oldValue = try cpu.csrs.readWrite(x.csr, rs1Value);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+        },
+        .CSRRS => |x| {
+            const rs1Value = cpu.gprs[x.rs1];
+            const oldValue = try cpu.csrs.readSet(x.csr, rs1Value);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+        },
+        .CSRRC => |x| {
+            const rs1Value = cpu.gprs[x.rs1];
+            const oldValue = try cpu.csrs.readClear(x.csr, rs1Value);
+            if (x.rd != 0) {
+                cpu.gprs[x.rd] = oldValue;
+            }
+        },
         .CSRRWI => |_| {},
         .CSRRSI => |_| {},
         .CSRRCI => |_| {},
