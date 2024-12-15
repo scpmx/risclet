@@ -200,6 +200,33 @@ pub fn CSRRC(rd: u5, rs1: u5, csr: u12) u32 {
     return (csr_as_u32 << 20) | (rs1_as_u32 << 15) | (three_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
 }
 
+pub fn CSRRWI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b101); // funct3 for CSRRWI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRSI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b110); // funct3 for CSRRSI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRCI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b111); // funct3 for CSRRCI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
 fn RType(rd: u5, rs1: u5, rs2: u5, funct3: u3, funct7: u7, opcode: u7) u32 {
     const rd_as_u32 = @as(u32, rd);
     const rs1_as_u32 = @as(u32, rs1);

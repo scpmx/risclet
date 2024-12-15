@@ -1,5 +1,5 @@
 const RawInstruction = @import("./instruction.zig").RawInstruction;
-const encode = @import("/encoder.zig");
+const encode = @import("./encoder.zig");
 
 const RType = struct { rd: u5, rs1: u5, rs2: u5 };
 
@@ -371,4 +371,88 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
     }
 }
 
-test "decode tests" {}
+const std = @import("std");
+
+test "decode csrrw" {
+    const raw = RawInstruction{ .value = encode.CSRRW(2, 1, 0x300) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRW => |x| {
+            try std.testing.expectEqual(x.rd, 2);
+            try std.testing.expectEqual(x.csr, 0x300);
+            try std.testing.expectEqual(x.rs1, 1);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode csrrs" {
+    const raw = RawInstruction{ .value = encode.CSRRS(5, 3, 0x341) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRS => |x| {
+            try std.testing.expectEqual(x.rd, 5);
+            try std.testing.expectEqual(x.csr, 0x341);
+            try std.testing.expectEqual(x.rs1, 3);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode csrrc" {
+    const raw = RawInstruction{ .value = encode.CSRRC(7, 4, 0x342) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRC => |x| {
+            try std.testing.expectEqual(x.rd, 7);
+            try std.testing.expectEqual(x.csr, 0x342);
+            try std.testing.expectEqual(x.rs1, 4);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode csrrwi" {
+    const raw = RawInstruction{ .value = encode.CSRRWI(9, 15, 0x343) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRWI => |x| {
+            try std.testing.expectEqual(x.rd, 9);
+            try std.testing.expectEqual(x.csr, 0x343);
+            try std.testing.expectEqual(x.imm, 15);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode csrrsi" {
+    const raw = RawInstruction{ .value = encode.CSRRSI(10, 7, 0x344) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRSI => |x| {
+            try std.testing.expectEqual(x.rd, 10);
+            try std.testing.expectEqual(x.csr, 0x344);
+            try std.testing.expectEqual(x.imm, 7);
+        },
+        else => try std.testing.expect(false),
+    }
+}
+
+test "decode csrrci" {
+    const raw = RawInstruction{ .value = encode.CSRRCI(11, 1, 0x345) };
+    const decoded = try decode(raw);
+
+    switch (decoded) {
+        .CSRRCI => |x| {
+            try std.testing.expectEqual(x.rd, 11);
+            try std.testing.expectEqual(x.csr, 0x345);
+            try std.testing.expectEqual(x.imm, 1);
+        },
+        else => try std.testing.expect(false),
+    }
+}

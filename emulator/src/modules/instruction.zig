@@ -156,7 +156,7 @@ test "J-type immediate extraction" {
 
 test "System immediate extraction" {
     const inst = RawInstruction{ .value = encode.CSRRC(4, 5, 0x300) }; // CSRRC x4, x5, CSR 0x300
-    try std.testing.expectEqual(0x300, inst.immSystem());
+    try std.testing.expectEqual(0x300, inst.csr());
 }
 
 // TODO: Write encoders for FENCE and FENCE.I
