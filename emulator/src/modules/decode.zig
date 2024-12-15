@@ -17,7 +17,7 @@ const SysType = struct { rd: u5, rs1: u5, csr: u12 };
 
 const SysImmType = struct { rd: u5, rs1: u5, csr: u12, imm: u4 };
 
-pub const DecodedInstruction = union {
+pub const DecodedInstruction = union(enum) {
     // R-Type Instructions
     ADD: RType,
     SUB: RType,
@@ -206,6 +206,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         },
                     };
                 },
+                else => return error.UnknownInstruction,
             }
         },
         0b0100011 => { // S-Type
@@ -295,6 +296,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         0x105 => {
                             return DecodedInstruction{ .WFI = {} };
                         },
+                        else => return error.UnknownInstruction,
                     }
                 },
                 1 => {
@@ -336,7 +338,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 },
                 6 => {
                     return DecodedInstruction{
-                        .CSRRSI = SysType{
+                        .CSRRSI = SysImmType{
                             .rd = instruction.rd(),
                             .rs1 = instruction.rs1(),
                             .csr = instruction.csr(),
@@ -346,7 +348,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 },
                 7 => {
                     return DecodedInstruction{
-                        .CSRRCI = SysType{
+                        .CSRRCI = SysImmType{
                             .rd = instruction.rd(),
                             .rs1 = instruction.rs1(),
                             .csr = instruction.csr(),

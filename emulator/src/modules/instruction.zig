@@ -36,7 +36,7 @@ pub const RawInstruction = struct {
 
     // Bits [20:31]
     pub inline fn funct12(self: RawInstruction) u12 {
-        return @truncate((self.raw >> 20) & 0xFFF);
+        return @truncate((self.value >> 20) & 0xFFF);
     }
 
     pub inline fn immIType(self: RawInstruction) i32 {

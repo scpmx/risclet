@@ -4,11 +4,13 @@ const cpu = @import("./modules/cpu.zig");
 const ins = @import("./modules/instruction.zig");
 const deb = @import("./modules/debug.zig");
 const elf = @import("./modules/elf.zig");
+const d = @import("./modules/decode.zig");
 
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
     const raw = try memory.read32(cpuState.pc);
-    const instsruction = ins.Instruction{ .value = raw };
-    try cpu.execute(instsruction, cpuState, memory);
+    const instsruction = ins.RawInstruction{ .value = raw };
+    const sdf = try d.decode(instsruction);
+    try cpu.execute(sdf, cpuState, memory);
 }
 
 pub fn main() !void {
