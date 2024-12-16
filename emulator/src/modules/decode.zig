@@ -67,10 +67,10 @@ pub const DecodedInstruction = union(enum) {
     JAL: JType,
 
     // System
-    WFI: void,
-    SRET: void,
-    ECALL: void,
-    EBREAK: void,
+    WFI,
+    SRET,
+    ECALL,
+    EBREAK,
 
     CSRRW: SysType,
     CSRRS: SysType,
@@ -80,8 +80,8 @@ pub const DecodedInstruction = union(enum) {
     CSRRCI: SysImmType,
 
     // Fence
-    FENCE: void,
-    FENCEI: void,
+    FENCE,
+    FENCEI,
 };
 
 pub fn decode(instruction: RawInstruction) !DecodedInstruction {
@@ -285,16 +285,16 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 0 => {
                     switch (instruction.funct12()) {
                         0x000 => {
-                            return DecodedInstruction{ .ECALL = {} };
+                            return .ECALL;
                         },
                         0x001 => {
-                            return DecodedInstruction{ .EBREAK = {} };
+                            return .EBREAK;
                         },
                         0x102 => {
-                            return DecodedInstruction{ .SRET = {} };
+                            return .SRET;
                         },
                         0x105 => {
-                            return DecodedInstruction{ .WFI = {} };
+                            return .WFI;
                         },
                         else => return error.UnknownInstruction,
                     }
@@ -359,10 +359,10 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
         0b0001111 => { // I-Type
             switch (instruction.funct3()) {
                 0b000 => {
-                    return DecodedInstruction{ .FENCE = {} };
+                    return .FENCE;
                 },
                 0b001 => {
-                    return DecodedInstruction{ .FENCEI = {} };
+                    return .FENCEI;
                 },
                 else => return error.UnknownInstruction,
             }
