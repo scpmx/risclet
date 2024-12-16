@@ -17,6 +17,8 @@ const SysType = struct { rd: u5, rs1: u5, csr: u12 };
 
 const SysImmType = struct { rd: u5, imm: u5, csr: u12 };
 
+const UnknownInstruction = struct { raw: u32 };
+
 pub const DecodedInstruction = union(enum) {
     // R-Type Instructions
     ADD: RType,
@@ -82,9 +84,15 @@ pub const DecodedInstruction = union(enum) {
     // Fence
     FENCE,
     FENCEI,
+
+    Unknown: UnknownInstruction,
+
+    pub fn unknown(raw: u32) DecodedInstruction {
+        return DecodedInstruction{ .Unknown = .{ .raw = raw } };
+    }
 };
 
-pub fn decode(instruction: RawInstruction) !DecodedInstruction {
+pub fn decode(instruction: RawInstruction) DecodedInstruction {
     switch (instruction.opcode()) {
         0b0110011 => { // R-Type
             const rtype = RType{
@@ -101,7 +109,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         0b0100000 => {
                             return DecodedInstruction{ .SUB = rtype };
                         },
-                        else => return error.UnknownInstruction,
+                        else => return DecodedInstruction.unknown(instruction.value),
                     }
                 },
                 0b001 => {
@@ -124,7 +132,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         0b0100000 => {
                             return DecodedInstruction{ .SRA = rtype };
                         },
-                        else => return error.UnknownInstruction,
+                        else => return DecodedInstruction.unknown(instruction.value),
                     }
                 },
                 0b110 => {
@@ -192,7 +200,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 0b101 => { // LHU
                     return DecodedInstruction{ .LHU = iType };
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
         0b1100111 => { // I-Type
@@ -206,7 +214,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         },
                     };
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
         0b0100011 => { // S-Type
@@ -225,7 +233,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 0b010 => { // SW
                     return DecodedInstruction{ .SW = sType };
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
         0b1100011 => { // B-Type
@@ -253,7 +261,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 0b111 => { // BGEU
                     return DecodedInstruction{ .BGEU = bType };
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
         0b0110111 => { // U-Type
@@ -296,7 +304,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         0x105 => {
                             return .WFI;
                         },
-                        else => return error.UnknownInstruction,
+                        else => return DecodedInstruction.unknown(instruction.value),
                     }
                 },
                 1 => {
@@ -353,7 +361,7 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                         },
                     };
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
         0b0001111 => { // I-Type
@@ -364,10 +372,10 @@ pub fn decode(instruction: RawInstruction) !DecodedInstruction {
                 0b001 => {
                     return .FENCEI;
                 },
-                else => return error.UnknownInstruction,
+                else => return DecodedInstruction.unknown(instruction.value),
             }
         },
-        else => return error.UnknownInstruction,
+        else => return DecodedInstruction.unknown(instruction.value),
     }
 }
 
@@ -375,7 +383,7 @@ const std = @import("std");
 
 test "decode csrrw" {
     const raw = RawInstruction{ .value = encode.CSRRW(2, 1, 0x300) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRW => |x| {
@@ -389,7 +397,7 @@ test "decode csrrw" {
 
 test "decode csrrs" {
     const raw = RawInstruction{ .value = encode.CSRRS(5, 3, 0x341) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRS => |x| {
@@ -403,7 +411,7 @@ test "decode csrrs" {
 
 test "decode csrrc" {
     const raw = RawInstruction{ .value = encode.CSRRC(7, 4, 0x342) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRC => |x| {
@@ -417,7 +425,7 @@ test "decode csrrc" {
 
 test "decode csrrwi" {
     const raw = RawInstruction{ .value = encode.CSRRWI(9, 15, 0x343) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRWI => |x| {
@@ -431,7 +439,7 @@ test "decode csrrwi" {
 
 test "decode csrrsi" {
     const raw = RawInstruction{ .value = encode.CSRRSI(10, 7, 0x344) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRSI => |x| {
@@ -445,7 +453,7 @@ test "decode csrrsi" {
 
 test "decode csrrci" {
     const raw = RawInstruction{ .value = encode.CSRRCI(11, 1, 0x345) };
-    const decoded = try decode(raw);
+    const decoded = decode(raw);
 
     switch (decoded) {
         .CSRRCI => |x| {

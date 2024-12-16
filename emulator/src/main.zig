@@ -9,7 +9,7 @@ const d = @import("./modules/decode.zig");
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
     const raw = try memory.read32(cpuState.pc);
     const instsruction = ins.RawInstruction{ .value = raw };
-    const sdf = try d.decode(instsruction);
+    const sdf = d.decode(instsruction);
     try cpu.execute(sdf, cpuState, memory);
 }
 

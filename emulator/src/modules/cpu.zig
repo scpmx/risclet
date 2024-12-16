@@ -445,6 +445,10 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             std.debug.print("FENCE.I", .{});
             cpu.pc += 4;
         },
+        .Unknown => |_| {
+            // Return Trap
+            cpu.pc += 4;
+        },
     }
 }
 
