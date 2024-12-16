@@ -4,11 +4,13 @@ const cpu = @import("./modules/cpu.zig");
 const ins = @import("./modules/instruction.zig");
 const deb = @import("./modules/debug.zig");
 const elf = @import("./modules/elf.zig");
+const d = @import("./modules/decode.zig");
 
 fn tick(cpuState: *cpu.CPUState, memory: *mem.Memory) !void {
-    const raw: ins.RawInstruction = try memory.read32(cpuState.ProgramCounter);
-    const decodedInstruction = try ins.decode(raw);
-    try cpu.execute(decodedInstruction, cpuState, memory);
+    const raw = try memory.read32(cpuState.pc);
+    const instsruction = ins.RawInstruction{ .value = raw };
+    const sdf = d.decode(instsruction);
+    try cpu.execute(sdf, cpuState, memory);
 }
 
 pub fn main() !void {
@@ -37,9 +39,7 @@ pub fn main() !void {
 
     const entry = try elf.load_elf(&memory, buffer);
 
-    var cpuState: cpu.CPUState = .{ .ProgramCounter = entry, .Registers = [_]u32{0} ** 32 };
-
-    cpuState.Registers[2] = 0x000FFFFC;
+    var cpuState = cpu.CPUState.default(entry, 0x000FFFFC);
 
     while (true) {
         try tick(&cpuState, &memory);

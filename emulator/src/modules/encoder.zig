@@ -105,15 +105,15 @@ pub fn SRAI(rd: u5, rs1: u5, shamt: u5) u32 {
 }
 
 // S-Type instruction encoders
-pub fn SB(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SB(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b000, 0b0100011); // funct3 = 0b000, opcode = 0b0100011
 }
 
-pub fn SH(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SH(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b001, 0b0100011); // funct3 = 0b001, opcode = 0b0100011
 }
 
-pub fn SW(rs1: u5, rs2: u5, imm: i12) u32 {
+pub fn SW(rs2: u5, imm: i12, rs1: u5) u32 {
     return SType(rs1, rs2, imm, 0b010, 0b0100011); // funct3 = 0b010, opcode = 0b0100011
 }
 
@@ -143,17 +143,88 @@ pub fn BGEU(rs1: u5, rs2: u5, imm: i13) u32 {
 }
 
 // U-Type instruction encoders
-pub fn encodeLUI(rd: u5, imm: i20) u32 {
+pub fn LUI(rd: u5, imm: i20) u32 {
     return UType(rd, imm, 0b0110111);
 }
 
-pub fn encodeAUIPC(rd: u5, imm: i20) u32 {
+pub fn AUIPC(rd: u5, imm: i20) u32 {
     return UType(rd, imm, 0b0010111);
 }
 
 // J-Type instruction encoders
 pub fn JAL(rd: u5, imm: i21) u32 {
     return JType(rd, imm, 0b1101111);
+}
+
+// System instruction encoders
+pub fn ECALL() u32 {
+    return 0x00000073;
+}
+
+pub fn EBREAK() u32 {
+    return 0x00100073;
+}
+
+pub fn SRET() u32 {
+    return 0x10200073;
+}
+
+pub fn WFI() u32 {
+    return 0x10500073;
+}
+
+pub fn CSRRW(rd: u5, rs1: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const rs1_as_u32 = @as(u32, rs1);
+    const one_as_u32 = @as(u32, 1);
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011);
+    return (csr_as_u32 << 20) | (rs1_as_u32 << 15) | (one_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRS(rd: u5, rs1: u5, csr: u12) u32 {
+    const rd_as_u32 = @as(u32, rd);
+    const rs1_as_u32 = @as(u32, rs1);
+    const two_as_u32 = @as(u32, 2);
+    const csr_as_u32 = @as(u32, csr);
+    const opcode_as_u32 = @as(u32, 0b1110011);
+    return (csr_as_u32 << 20) | (rs1_as_u32 << 15) | (two_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRC(rd: u5, rs1: u5, csr: u12) u32 {
+    const rd_as_u32 = @as(u32, rd);
+    const rs1_as_u32 = @as(u32, rs1);
+    const three_as_u32 = @as(u32, 3);
+    const csr_as_u32 = @as(u32, csr);
+    const opcode_as_u32 = @as(u32, 0b1110011);
+    return (csr_as_u32 << 20) | (rs1_as_u32 << 15) | (three_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRWI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b101); // funct3 for CSRRWI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRSI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b110); // funct3 for CSRRSI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
+}
+
+pub fn CSRRCI(rd: u5, imm: u5, csr: u12) u32 {
+    const csr_as_u32 = @as(u32, csr);
+    const imm_as_u32 = @as(u32, imm);
+    const funct3_as_u32 = @as(u32, 0b111); // funct3 for CSRRCI
+    const rd_as_u32 = @as(u32, rd);
+    const opcode_as_u32 = @as(u32, 0b1110011); // CSR opcode
+    return (csr_as_u32 << 20) | (imm_as_u32 << 15) | (funct3_as_u32 << 12) | (rd_as_u32 << 7) | opcode_as_u32;
 }
 
 fn RType(rd: u5, rs1: u5, rs2: u5, funct3: u3, funct7: u7, opcode: u7) u32 {
