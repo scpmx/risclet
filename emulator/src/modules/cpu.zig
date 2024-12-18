@@ -3,8 +3,15 @@ const DecodedInstruction = @import("./decode.zig").DecodedInstruction;
 const Memory = @import("./memory.zig").Memory;
 const encode = @import("./encoder.zig");
 const Csrs = @import("./csrs.zig").Csrs;
+const RawInstruction = @import("./instruction.zig").RawInstruction;
 
 const Privilege = enum { Supervisor, User };
+
+const Trap = struct {
+    cause: u32,
+    fault_addr: u32,
+    pc: u32,
+};
 
 pub const CPUState = struct {
     // Current Privilege Level
@@ -27,7 +34,12 @@ pub const CPUState = struct {
     }
 };
 
-pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !void {
+pub fn fetch(cpu: *CPUState, mem: *Memory) !RawInstruction {
+    const value = try mem.read32(cpu.pc);
+    return RawInstruction{ .value = value };
+}
+
+pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) ?Trap {
     switch (instruction) {
         .ADD => |x| {
             if (x.rd != 0) {
@@ -176,7 +188,10 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
                 const rs1Signed: i32 = @bitCast(cpu.gprs[x.rs1]);
                 const address: u32 = @bitCast(rs1Signed + x.imm);
 
-                const loadedByte = try mem.read8(address);
+                const loadedByte = mem.read8(address) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
+
                 const byteAsWord = @as(u32, loadedByte);
 
                 if (loadedByte & 0x80 != 0) {
@@ -194,10 +209,13 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
                 const address: u32 = @bitCast(rs1Signed + x.imm);
 
                 if (address & 0b1 != 0) {
-                    return error.MisalignedAddress;
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
                 }
 
-                const loadedU16 = try mem.read16(address);
+                const loadedU16 = mem.read16(address) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
+
                 const u16AsWord = @as(u32, loadedU16);
 
                 if (u16AsWord & 0x8000 != 0) {
@@ -215,10 +233,12 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
                 const address: u32 = @bitCast(rs1Signed + x.imm);
 
                 if (address & 0b11 != 0) {
-                    return error.MisalignedAddress;
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
                 }
 
-                cpu.gprs[x.rd] = try mem.read32(address);
+                cpu.gprs[x.rd] = mem.read32(address) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
             }
             cpu.pc += 4;
         },
@@ -227,7 +247,10 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
                 const rs1Signed: i32 = @bitCast(cpu.gprs[x.rs1]);
                 const address: u32 = @bitCast(rs1Signed + x.imm);
 
-                const loadedByte = try mem.read8(address);
+                const loadedByte = mem.read8(address) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
+
                 const byteAsWord = @as(u32, loadedByte);
 
                 cpu.gprs[x.rd] = byteAsWord;
@@ -240,10 +263,13 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
                 const address: u32 = @bitCast(rs1Signed + x.imm);
 
                 if (address & 0b1 != 0) {
-                    return error.MisalignedAddress;
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
                 }
 
-                const loadedU16 = try mem.read16(address);
+                const loadedU16 = mem.read16(address) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
+
                 const u16AsWord = @as(u32, loadedU16);
 
                 cpu.gprs[x.rd] = u16AsWord;
@@ -253,6 +279,7 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         .JALR => |x| {
             const rs1Signed: i32 = @bitCast(cpu.gprs[x.rs1]);
             const target: u32 = @bitCast(rs1Signed + x.imm);
+            // TODO: Ensure this is the actual behavior of JALR
             const aligned = target & 0xFFFFFFFE; // Clear LSB to ensure alignment
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = cpu.pc + 4; // Save return address
@@ -262,7 +289,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         .SB => |x| {
             const rs1Value: i32 = @bitCast(cpu.gprs[x.rs1]);
             const address: u32 = @bitCast(rs1Value + x.imm);
-            try mem.write8(address, @truncate(cpu.gprs[x.rs2]));
+            mem.write8(address, @truncate(cpu.gprs[x.rs2])) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             cpu.pc += 4;
         },
         .SH => |x| {
@@ -270,9 +299,11 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             const address: u32 = @bitCast(rs1Value + x.imm);
 
             if (address & 0b1 != 0) {
-                return error.MisalignedAddress;
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
             } else {
-                try mem.write16(address, @truncate(cpu.gprs[x.rs2]));
+                mem.write16(address, @truncate(cpu.gprs[x.rs2])) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
             }
             cpu.pc += 4;
         },
@@ -281,9 +312,11 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             const address: u32 = @bitCast(rs1Value + x.imm);
 
             if (address & 0b11 != 0) {
-                return error.MisalignedAddress;
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
             } else {
-                try mem.write32(address, cpu.gprs[x.rs2]);
+                mem.write32(address, cpu.gprs[x.rs2]) catch {
+                    return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+                };
             }
             cpu.pc += 4;
         },
@@ -391,7 +424,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRW => |x| {
             const rs1Value = cpu.gprs[x.rs1];
-            const oldValue = try cpu.csrs.readWrite(x.csr, rs1Value);
+            const oldValue = cpu.csrs.readWrite(x.csr, rs1Value) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -399,7 +434,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRS => |x| {
             const rs1Value = cpu.gprs[x.rs1];
-            const oldValue = try cpu.csrs.readSet(x.csr, rs1Value);
+            const oldValue = cpu.csrs.readSet(x.csr, rs1Value) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -407,7 +444,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRC => |x| {
             const rs1Value = cpu.gprs[x.rs1];
-            const oldValue = try cpu.csrs.readClear(x.csr, rs1Value);
+            const oldValue = cpu.csrs.readClear(x.csr, rs1Value) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -415,7 +454,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRWI => |x| {
             const immAsU32: u32 = @as(u32, x.imm);
-            const oldValue = try cpu.csrs.readWrite(x.csr, immAsU32);
+            const oldValue = cpu.csrs.readWrite(x.csr, immAsU32) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -423,7 +464,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRSI => |x| {
             const immAsU32: u32 = @as(u32, x.imm);
-            const oldValue = try cpu.csrs.readSet(x.csr, immAsU32);
+            const oldValue = cpu.csrs.readSet(x.csr, immAsU32) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -431,7 +474,9 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
         },
         .CSRRCI => |x| {
             const immAsU32: u32 = @as(u32, x.imm);
-            const oldValue = try cpu.csrs.readClear(x.csr, immAsU32);
+            const oldValue = cpu.csrs.readClear(x.csr, immAsU32) catch {
+                return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
+            };
             if (x.rd != 0) {
                 cpu.gprs[x.rd] = oldValue;
             }
@@ -446,10 +491,10 @@ pub fn execute(instruction: DecodedInstruction, cpu: *CPUState, mem: *Memory) !v
             cpu.pc += 4;
         },
         .Unknown => |_| {
-            // Return Trap
-            cpu.pc += 4;
+            return Trap{ .cause = 0, .fault_addr = 0, .pc = cpu.pc };
         },
     }
+    return null;
 }
 
 test "csrrw test" {

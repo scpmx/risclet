@@ -92,7 +92,8 @@ pub const DecodedInstruction = union(enum) {
     }
 };
 
-pub fn decode(instruction: RawInstruction) DecodedInstruction {
+pub fn decode(value: u32) DecodedInstruction {
+    const instruction = RawInstruction{ .value = value };
     switch (instruction.opcode()) {
         0b0110011 => { // R-Type
             const rtype = RType{
